@@ -1,43 +1,83 @@
 <idea-plugin version="2">
-  <id>com.yourcompany.unique.plugin.id</id>
-  <name>Plugin display name here</name>
-  <version>1.0</version>
-  <vendor email="support@yourcompany.com" url="http://www.yourcompany.com">YourCompany</vendor>
+    <id>com.yourcompany.unique.plugin.id</id>
+    <name>Plugin display name here</name>
+    <version>1.0</version>
+    <vendor email="support@yourcompany.com" url="http://www.yourcompany.com">YourCompany</vendor>
 
-  <description><![CDATA[
+    <description><![CDATA[
       Enter short description for your plugin here.<br>
       <em>most HTML tags may be used</em>
     ]]></description>
 
-  <change-notes><![CDATA[
+    <change-notes><![CDATA[
       Add change notes here.<br>
       <em>most HTML tags may be used</em>
     ]]>
-  </change-notes>
+    </change-notes>
 
-  <!-- please see http://confluence.jetbrains.com/display/IDEADEV/Build+Number+Ranges for description -->
-  <idea-version since-build="131"/>
+    <!-- please see http://confluence.jetbrains.com/display/IDEADEV/Build+Number+Ranges for description -->
+    <idea-version since-build="131"/>
 
-  <!-- please see http://confluence.jetbrains.com/display/IDEADEV/Plugin+Compatibility+with+IntelliJ+Platform+Products
-       on how to target different products -->
-  <!-- uncomment to enable plugin in all products
-  <depends>com.intellij.modules.lang</depends>
-  -->
+    <!-- please see http://confluence.jetbrains.com/display/IDEADEV/Plugin+Compatibility+with+IntelliJ+Platform+Products
+         on how to target different products -->
+    <!-- uncomment to enable plugin in all products
+    <depends>com.intellij.modules.lang</depends>
+    -->
 
-  <extensions defaultExtensionNs="com.intellij">
-    <!-- Add your extensions here -->
-  </extensions>
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- Add your extensions here -->
+        <codeInsight.lineMarkerProvider language="JAVA"
+                                        implementationClass="com.jetbrains.hints.MyLinesMarkerProvider"/>
+    </extensions>
 
-  <application-components>
-    <!-- Add your application components here -->
-  </application-components>
+    <application-components>
+        <!-- Add your application components here -->
+        <component>
+            <implementation-class>com.jetbrains.MyPluginRegistration</implementation-class>
+        </component>
+    </application-components>
 
-  <project-components>
-    <!-- Add your project components here -->
-  </project-components>
+    <project-components>
+        <!-- Add your project components here -->
+    </project-components>
 
-  <actions>
-    <!-- Add your actions here -->
-  </actions>
+    <actions>
+
+        <group id="MyPlugin.SampleMenu" text="_Sample Menu" description="Sample menu">
+            <add-to-group group-id="MainMenu" anchor="last"/>
+            <action id="Myplugin.Textboxes" class="com.jetbrains.tmp.TextBoxes" text="Text _Boxes"
+                    description="A test menu item"/>
+
+            <action id="Myplugin.Dialogs"
+                    class="com.jetbrains.tmp.DumbAction2"
+                    text="_Dumb"
+                    description="A test menu item">
+                <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt z"/>
+                <!--<add-to-group group-id="com.jetbrains.actions.MyActionGroup" anchor="first"/>-->
+            </action>
+
+            <action id="dumb.action"
+                    class="com.jetbrains.tmp.DumbAction"
+                    text="Sort Lines"
+                    description="Sort selected lines or whole file if selection is empty">
+                <keyboard-shortcut keymap="$default" first-keystroke="alt shift l"/>
+                <!--<add-to-group group-id="com.jetbrains.actions.MyActionGroup" anchor="last"/>-->
+            </action>
+
+        </group>
+
+        <action id="open_exceptions_gutter" class="com.jetbrains.ui.OpenExceptionsGutter" text="Show Exceptions"
+                description="Show known exceptions">
+            <add-to-group group-id="EditorGutterPopupMenu" anchor="last"/>
+        </action>
+        <action id="exception_clicked_action" class="com.jetbrains.actions.ExceptionClickedAction"
+                text="Exception Clicked Action">
+            <add-to-group group-id="EditorPopupMenu" anchor="first"/>
+        </action>
+        <!-- <group id="com.jetbrains.actions.MyActionGroup" class="com.jetbrains.actions.MyActionGroup"
+                text="My Action Group">
+
+         </group>-->
+    </actions>
 
 </idea-plugin>
