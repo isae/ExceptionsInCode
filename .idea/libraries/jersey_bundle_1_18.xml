@@ -4,6 +4,8 @@
       <root url="jar://$PROJECT_DIR$/lib/jersey-bundle-1.18.jar!/" />
     </CLASSES>
     <JAVADOC />
-    <SOURCES />
+    <SOURCES>
+      <root url="file://E:/Java/decompiled" />
+    </SOURCES>
   </library>
 </component>

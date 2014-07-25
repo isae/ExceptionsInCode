@@ -19,6 +19,7 @@ public class YouTrackComment {
     private String created;
 
     @XmlAttribute(name = "text")
+    //  @Produces(MediaType.APPLICATION_XML + ";charset=utf-8")
     public String getText() {
         return text;
     }

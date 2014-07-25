@@ -71,10 +71,15 @@ public class YouTrackClient {
         if (id == null) {
             throw new RuntimeException("Null issue id");
         } else {
+            WebResource.Builder b = service.path("/issue/").path(id)
+                    .queryParam("wikifyDescription", String.valueOf(wikifyDescription))
+                    .accept("application/xml");
+            //  String s = b.get(String.class);
+            //  System.out.println("\n____");
+            //  System.out.println(s);
+            // System.out.println("\n____");
             YouTrackIssue issue =
-                    service.path("/issue/").path(id)
-                            .queryParam("wikifyDescription", String.valueOf(wikifyDescription))
-                            .accept("application/xml").get(YouTrackIssue.class);
+                    b.get(YouTrackIssue.class);
             issue.mapFields();
             return issue;
         }
@@ -91,10 +96,10 @@ public class YouTrackClient {
         return "";
     }
 
-    public List<YouTrackIssue> getIssuesInProject(String projectname, String filter, int after,
+    public List<YouTrackIssue> getIssuesInProject(String projectName, String filter, int after,
                                                   int max, long updatedAfter) {
         try {
-            return service.path("/issue/byproject/").path(projectname).queryParam("filter", filter)
+            return service.path("/issue/byproject/").path(projectName).queryParam("filter", filter)
                     .queryParam("after", Integer.toString(after)).queryParam("max", Integer.toString(max))
                     .queryParam("updatedAfter", Long.toString(updatedAfter)).accept("application/xml")
                     .get(YouTrackIssuesList.class).getIssues();
