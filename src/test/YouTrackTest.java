@@ -1,11 +1,11 @@
 package test;
 
-import com.jetbrains.ParsedException;
-import com.jetbrains.integration.youtrack.client.YouTrackClient;
-import com.jetbrains.integration.youtrack.client.YouTrackClientFactory;
-import com.jetbrains.integration.youtrack.client.YouTrackIssue;
-import com.jetbrains.integration.youtrack.client.YouTrackProject;
-import com.jetbrains.issues.StacktraceProvider;
+import com.jetbrains.isaev.integration.youtrack.client.YouTrackClient;
+import com.jetbrains.isaev.integration.youtrack.client.YouTrackClientFactory;
+import com.jetbrains.isaev.integration.youtrack.client.YouTrackIssue;
+import com.jetbrains.isaev.integration.youtrack.client.YouTrackProject;
+import com.jetbrains.isaev.issues.StacktraceProvider;
+import com.jetbrains.isaev.ui.ParsedException;
 
 import java.io.FileWriter;
 import java.io.IOException;

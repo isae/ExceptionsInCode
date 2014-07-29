@@ -4,6 +4,8 @@
       <root url="jar://$PROJECT_DIR$/lib/jersey-apache-client-1.12.jar!/" />
     </CLASSES>
     <JAVADOC />
-    <SOURCES />
+    <SOURCES>
+      <root url="file://E:/Java/decompiled" />
+    </SOURCES>
   </library>
 </component>
