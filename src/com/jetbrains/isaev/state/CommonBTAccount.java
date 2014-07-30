@@ -1,22 +1,27 @@
 package com.jetbrains.isaev.state;
 
+import com.jetbrains.isaev.common.CommonBTProject;
+
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * User: Xottab
  * Date: 25.07.2014
  */
-public class BTAccount implements Serializable {
+public class CommonBTAccount implements Serializable {
 
     private String domainName;
     private String login;
     private String password;
     private BTAccountType type;
+    private List<CommonBTProject> projects;
 
-    public BTAccount() {
+    public CommonBTAccount() {
     }
 
-    public BTAccount(String domainName, String login, String password) {
+    public CommonBTAccount(String domainName, String login, String password) {
 
         this.domainName = domainName;
         this.login = login;
@@ -53,6 +58,17 @@ public class BTAccount implements Serializable {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public List<CommonBTProject> getProjects() {
+        if (projects == null) {
+            projects = new ArrayList<>(0);
+        }
+        return projects;
+    }
+
+    public void setProjects(List<CommonBTProject> projects) {
+        this.projects = projects;
     }
 
     enum BTAccountType {

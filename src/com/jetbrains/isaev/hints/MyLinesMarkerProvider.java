@@ -5,7 +5,7 @@ import com.intellij.codeInsight.daemon.impl.IconLineMarkerProvider;
 import com.intellij.codeInsight.navigation.NavigationGutterIconBuilder;
 import com.intellij.openapi.project.Project;
 import com.intellij.psi.PsiElement;
-import com.intellij.psi.PsiLiteralExpression;
+import com.intellij.psi.PsiMethod;
 import com.jetbrains.isaev.ui.IconProvider;
 import org.jetbrains.annotations.NotNull;
 
@@ -22,16 +22,19 @@ public class MyLinesMarkerProvider extends IconLineMarkerProvider {
 
     @Override
     public void collectSlowLineMarkers(@NotNull List<PsiElement> elements, @NotNull Collection<LineMarkerInfo> result) {
-        for (PsiElement element : elements)
-            if (element instanceof PsiLiteralExpression) {
-                PsiLiteralExpression literalExpression = (PsiLiteralExpression) element;
-                String value = String.valueOf(literalExpression.getValue());
+        String currentClass = null;
+        for (PsiElement element : elements) {
+            if (element instanceof PsiMethod) {
+                PsiMethod method = (PsiMethod) element;
+                String st = method.getContainingClass().getQualifiedName() == null ? "" : method.getContainingClass().getQualifiedName();
+                st += "." + method.getName();
                 Project project = element.getProject();
                 NavigationGutterIconBuilder<PsiElement> builder =
                         NavigationGutterIconBuilder.create(icon).
                                 setTargets(element).setPopupTitle("GOVNO Title").
-                                setTooltipText("Navigate to a simple property");
-                result.add(builder.createLineMarkerInfo(element));
+                                setTooltipText(st);
+                result.add(builder.createLineMarkerInfo(method.getNameIdentifier()));
             }
+        }
     }
 }

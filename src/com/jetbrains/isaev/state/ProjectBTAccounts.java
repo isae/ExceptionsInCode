@@ -8,14 +8,13 @@ import java.util.List;
  * Date: 28.07.2014
  */
 public class ProjectBTAccounts {
-    private List<BTAccount> btAccounts = new ArrayList<>();
-    ;
+    private List<CommonBTAccount> btAccounts = new ArrayList<>();
 
-    public List<BTAccount> getBtAccounts() {
+    public List<CommonBTAccount> getBtAccounts() {
         return btAccounts;
     }
 
-    public void setBtAccounts(List<BTAccount> btAccounts) {
+    public void setBtAccounts(List<CommonBTAccount> btAccounts) {
         this.btAccounts = btAccounts;
     }
 }

@@ -12,7 +12,8 @@ import org.jetbrains.annotations.Nullable;
 @State(
         name = "BTAccounts",
         storages = {
-                @Storage(id = "acc", file = StoragePathMacros.PROJECT_CONFIG_DIR + "/bugtrackers.xml", scheme = StorageScheme.DEFAULT)
+                @Storage(id = "default", file = StoragePathMacros.PROJECT_FILE),
+                @Storage(id = "acc", file = StoragePathMacros.PROJECT_CONFIG_DIR + "/bugtrackers.xml", scheme = StorageScheme.DIRECTORY_BASED)
         }
 )
 public class BTAccountStorageProvider implements ProjectComponent, PersistentStateComponent<ProjectBTAccounts> {

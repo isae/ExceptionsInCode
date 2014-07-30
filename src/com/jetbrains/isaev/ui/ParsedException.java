@@ -1,23 +1,21 @@
 package com.jetbrains.isaev.ui;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import com.jetbrains.isaev.issues.StackTraceElementWrapper;
 
+import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * User: Xottab
  * Date: 23.07.2014
  */
-public class ParsedException {
-    @NotNull
+public class ParsedException implements Serializable {
     private String name;
-    @Nullable
     private String optionalMessage;
-    @NotNull
-    private List<StackTraceElement> stacktrace;
+    private List<StackTraceElementWrapper> stacktrace = new ArrayList<>();
 
-    public ParsedException(@NotNull String name, @NotNull List<StackTraceElement> stacktrace) {
+    public ParsedException(String name, List<StackTraceElementWrapper> stacktrace) {
         this.name = name;
         this.stacktrace = stacktrace;
     }
@@ -25,30 +23,27 @@ public class ParsedException {
     public ParsedException() {
     }
 
-    @NotNull
     public String getName() {
         return name;
     }
 
-    public void setName(@NotNull String name) {
+    public void setName(String name) {
         this.name = name;
     }
 
-    @NotNull
-    public List<StackTraceElement> getStacktrace() {
+    public List<StackTraceElementWrapper> getStacktrace() {
         return stacktrace;
     }
 
-    public void setStacktrace(@NotNull List<StackTraceElement> stacktrace) {
+    public void setStacktrace(List<StackTraceElementWrapper> stacktrace) {
         this.stacktrace = stacktrace;
     }
 
-    @Nullable
     public String getOptionalMessage() {
         return optionalMessage;
     }
 
-    public void setOptionalMessage(@Nullable String optionalMessage) {
+    public void setOptionalMessage(String optionalMessage) {
         this.optionalMessage = optionalMessage;
     }
 }

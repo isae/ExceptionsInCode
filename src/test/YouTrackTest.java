@@ -4,6 +4,7 @@ import com.jetbrains.isaev.integration.youtrack.client.YouTrackClient;
 import com.jetbrains.isaev.integration.youtrack.client.YouTrackClientFactory;
 import com.jetbrains.isaev.integration.youtrack.client.YouTrackIssue;
 import com.jetbrains.isaev.integration.youtrack.client.YouTrackProject;
+import com.jetbrains.isaev.issues.StackTraceElementWrapper;
 import com.jetbrains.isaev.issues.StacktraceProvider;
 import com.jetbrains.isaev.ui.ParsedException;
 
@@ -22,24 +23,24 @@ public class YouTrackTest {
     private static final String JETBRAINS_YOUTRACK_URL = "http://youtrack.jetbrains.com";
     private static PrintWriter out;
 
-    private static List<YouTrackIssue> getIssuesAvoidBugged(YouTrackProject project,
-                                                            String filter,
-                                                            int after,
-                                                            int max,
-                                                            long updatedAfter,
-                                                            YouTrackClient client,
-                                                            List<Integer> errors) {
+    public static List<YouTrackIssue> getIssuesAvoidBugged(String projectName,
+                                                           String filter,
+                                                           int after,
+                                                           int max,
+                                                           long updatedAfter,
+                                                           YouTrackClient client,
+                                                           List<Integer> errors) {
         List<YouTrackIssue> result;
         try {
-            result = client.getIssuesInProject(project.getProjectShortName(), filter, after, max, updatedAfter);
+            result = client.getIssuesInProject(projectName, filter, after, max, updatedAfter);
         } catch (Exception e) {
             if (max == 1) {
-                errors.add(after + 1);
+                if (errors != null) errors.add(after + 1);
                 return new ArrayList<>(0);
             }
             int mid = max / 2;
-            result = getIssuesAvoidBugged(project, filter, after, mid, updatedAfter, client, errors);
-            result.addAll(getIssuesAvoidBugged(project, filter, after + mid, max - mid, updatedAfter, client, errors));
+            result = getIssuesAvoidBugged(projectName, filter, after, mid, updatedAfter, client, errors);
+            result.addAll(getIssuesAvoidBugged(projectName, filter, after + mid, max - mid, updatedAfter, client, errors));
         }
         return result;
 
@@ -70,7 +71,7 @@ public class YouTrackTest {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            List<YouTrackIssue> tempIssues = getIssuesAvoidBugged(proj, "", after, 1000, 0, client, errors);
+            List<YouTrackIssue> tempIssues = getIssuesAvoidBugged(proj.getProjectShortName(), "", after, 1000, 0, client, errors);
             finded = tempIssues.size();
             //  issues.addAll(tempIssues);
             after += finded;
@@ -84,7 +85,7 @@ public class YouTrackTest {
                     for (ParsedException exception : parsedExceptions) {
 
                         out.println(exception.getName() + ": " + exception.getOptionalMessage());
-                        for (StackTraceElement element : exception.getStacktrace()) {
+                        for (StackTraceElementWrapper element : exception.getStacktrace()) {
                             out.println("at " + element.toString());
                         }
                         out.println("_____");

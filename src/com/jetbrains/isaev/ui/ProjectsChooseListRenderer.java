@@ -13,10 +13,11 @@ import java.awt.event.ActionListener;
  * Date: 29.07.2014
  */
 public class ProjectsChooseListRenderer implements ListCellRenderer<SelectableItem<CommonBTProject>> {
+
     @Override
     public Component getListCellRendererComponent(JList<? extends SelectableItem<CommonBTProject>> list, SelectableItem<CommonBTProject> value, int index, boolean isSelected, boolean cellHasFocus) {
         if (value.checkbox == null) {
-            final JBCheckBox checkBox = new JBCheckBox(value.value.getName());
+            final JBCheckBox checkBox = new JBCheckBox(value.value.getFullName());
             value.checkbox = checkBox;
             checkBox.addActionListener(new ActionListener() {
                 @Override
@@ -28,15 +29,5 @@ public class ProjectsChooseListRenderer implements ListCellRenderer<SelectableIt
         }
         return value.checkbox;
     }
-    /*@Override
-    public Component getListCellRendererComponent(JList<? extends CommonBTProject> list, final CommonBTProject value, final int index, boolean isSelected, boolean cellHasFocus) {
-        final JBCheckBox checkBox = new JBCheckBox(value.getName());
-        checkBox.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-               checkBox
-            }
-        });
-        return checkBox;
-    }*/
+
 }

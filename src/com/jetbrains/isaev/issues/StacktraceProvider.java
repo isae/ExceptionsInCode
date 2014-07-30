@@ -84,13 +84,13 @@ public class StacktraceProvider {
         for (int i = 0; i < headPositions.size(); i++) {
             int next = i == headPositions.size() - 1 ? text.length() : headPositions.get(i + 1);
             Matcher m = traceMatcher.region(headPositions.get(i), next);
-            List<StackTraceElement> stackTrace = new ArrayList<>();
+            List<StackTraceElementWrapper> stackTrace = new ArrayList<>();
             while (m.find()) {
                 String className = m.group(1);
                 String methodName = m.group(3);
                 String sourceFile = m.group(4);
                 int lineNum = Integer.parseInt(m.group(5));
-                stackTrace.add(new StackTraceElement(className, methodName,
+                stackTrace.add(new StackTraceElementWrapper(className, methodName,
                         sourceFile, lineNum));
             }
             result.get(i).setStacktrace(stackTrace);

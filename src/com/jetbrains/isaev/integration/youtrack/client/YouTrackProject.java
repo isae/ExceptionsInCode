@@ -4,7 +4,6 @@
 
 package com.jetbrains.isaev.integration.youtrack.client;
 
-import com.jetbrains.isaev.common.CommonBTProject;
 import com.jetbrains.isaev.integration.youtrack.client.YouTrackCustomField.YouTrackCustomFieldType;
 
 import javax.xml.bind.annotation.XmlAttribute;
@@ -14,7 +13,7 @@ import java.util.Date;
 import java.util.HashMap;
 
 @XmlRootElement(name = "project")
-public class YouTrackProject implements CommonBTProject {
+public class YouTrackProject {
 
     private String projectFullName;
 
@@ -129,8 +128,22 @@ public class YouTrackProject implements CommonBTProject {
         return getCustomFieldsMap().keySet().contains(field);
     }
 
+
     @Override
-    public String getName() {
-        return getProjectFullName();
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        YouTrackProject that = (YouTrackProject) o;
+
+        if (projectFullName != null ? !projectFullName.equals(that.projectFullName) : that.projectFullName != null)
+            return false;
+
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        return projectFullName != null ? projectFullName.hashCode() : 0;
     }
 }
