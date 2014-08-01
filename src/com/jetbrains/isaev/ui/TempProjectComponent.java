@@ -3,7 +3,8 @@ package com.jetbrains.isaev.ui;
 import com.intellij.openapi.components.ProjectComponent;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.vfs.VirtualFile;
+import com.jetbrains.isaev.GlobalVariables;
+import com.jetbrains.isaev.dao.SerializableIssuesDAO;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -11,10 +12,9 @@ import org.jetbrains.annotations.NotNull;
  */
 public class TempProjectComponent implements ProjectComponent {
     private static final Logger logger = Logger.getInstance(TempProjectComponent.class);
-    private Project proj;
 
     public TempProjectComponent(Project project) {
-        this.proj = project;
+        GlobalVariables.project = project;
     }
 
     public void initComponent() {
@@ -22,6 +22,7 @@ public class TempProjectComponent implements ProjectComponent {
     }
 
     public void disposeComponent() {
+        SerializableIssuesDAO.getInstance().storeData();
         // TODO: insert component disposal logic here
     }
 
@@ -31,8 +32,7 @@ public class TempProjectComponent implements ProjectComponent {
     }
 
     public void projectOpened() {
-        VirtualFile projDir = proj.getBaseDir();
-        printJavaFilesRecursive();// called when project is opened
+        //printJavaFilesRecursive();// called when project is opened
     }
 
     public void projectClosed() {

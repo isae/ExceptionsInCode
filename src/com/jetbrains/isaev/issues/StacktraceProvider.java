@@ -1,10 +1,16 @@
 package com.jetbrains.isaev.issues;
 
+import com.intellij.psi.PsiFile;
+import com.intellij.psi.search.FilenameIndex;
+import com.intellij.psi.search.GlobalSearchScope;
+import com.jetbrains.isaev.GlobalVariables;
+import com.jetbrains.isaev.dao.SerializableIssuesDAO;
 import com.jetbrains.isaev.ui.ParsedException;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -36,10 +42,12 @@ public class StacktraceProvider {
     private static Matcher headlineMatcher;
     private static Matcher traceMatcher;
     private static StacktraceProvider instance;
+    private SerializableIssuesDAO issuesDAO;
 
     private StacktraceProvider() {
         headlinePattern = Pattern.compile(HEADLINE_PATTERN);
         tracePattern = Pattern.compile(TRACE_PATTERN);
+        issuesDAO = SerializableIssuesDAO.getInstance();
     }
 
     public static StacktraceProvider getInstance() {
@@ -84,15 +92,24 @@ public class StacktraceProvider {
         for (int i = 0; i < headPositions.size(); i++) {
             int next = i == headPositions.size() - 1 ? text.length() : headPositions.get(i + 1);
             Matcher m = traceMatcher.region(headPositions.get(i), next);
-            List<StackTraceElementWrapper> stackTrace = new ArrayList<>();
+            List<StackTraceElement> stackTrace = new ArrayList<>();
+            String sourceFile = null;
             while (m.find()) {
                 String className = m.group(1);
                 String methodName = m.group(3);
-                String sourceFile = m.group(4);
+                sourceFile = m.group(4);
                 int lineNum = Integer.parseInt(m.group(5));
-                stackTrace.add(new StackTraceElementWrapper(className, methodName,
+                boolean f = false;
+                PsiFile[] files = FilenameIndex.getFilesByName(GlobalVariables.project, sourceFile, GlobalSearchScope.projectScope(GlobalVariables.project));
+                for (PsiFile file : files)
+                    if (file.getName().equals(sourceFile)) {
+                        f = true;
+                        break;
+                    }
+                if (f) stackTrace.add(new StackTraceElement(className, methodName,
                         sourceFile, lineNum));
             }
+
             result.get(i).setStacktrace(stackTrace);
         }
         Iterator<ParsedException> iter = result.iterator();
@@ -102,29 +119,23 @@ public class StacktraceProvider {
                 iter.remove();
             }
         }
+        for (ParsedException exception : result) {
+            for (StackTraceElement element : exception.getStacktrace()) {
+                Map<String, List<StackTraceElement>> cmap = issuesDAO.getClassNameToSTElement();
+                Map<String, List<StackTraceElement>> mmap = issuesDAO.getMethodNameToSTElement();
+                Map<String, List<StackTraceElement>> fmap = issuesDAO.getFileNameToSTElement();
+                if (!cmap.containsKey(element.getDeclaringClass()))
+                    cmap.put(element.getDeclaringClass(), new ArrayList<StackTraceElement>());
+                if (!mmap.containsKey(element.getMethodName()))
+                    mmap.put(element.getMethodName(), new ArrayList<StackTraceElement>());
+                if (!fmap.containsKey(element.getFileName()))
+                    fmap.put(element.getFileName(), new ArrayList<StackTraceElement>());
+                cmap.get(element.getDeclaringClass()).add(element);
+                mmap.get(element.getMethodName()).add(element);
+                fmap.get(element.getFileName()).add(element);
+            }
+        }
         return result;
     }
 
-  /*  private static String generate_$() {
-        Exception[] exceptions = {new ClassCastException(),
-                new NullPointerException(), new IOException("foo")};
-        StringWriter writer = new StringWriter();
-        for (Exception exception : exceptions) {
-            try {
-                throw exception;
-            } catch (Exception e) {
-                e.printStackTrace(new PrintWriter(writer));
-                writer.append(" ");
-            }
-        }
-        return writer.getBuffer().toString();
-    }
-
-
-    public static void main(String[] args) {
-        StacktraceManager manager = getInstance();
-        String examples = generate_$();
-        ParsedException[] list = manager.parseAllExceptions(examples);
-        boolean f = true;
-    }*/
 }

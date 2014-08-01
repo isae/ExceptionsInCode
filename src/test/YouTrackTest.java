@@ -4,7 +4,6 @@ import com.jetbrains.isaev.integration.youtrack.client.YouTrackClient;
 import com.jetbrains.isaev.integration.youtrack.client.YouTrackClientFactory;
 import com.jetbrains.isaev.integration.youtrack.client.YouTrackIssue;
 import com.jetbrains.isaev.integration.youtrack.client.YouTrackProject;
-import com.jetbrains.isaev.issues.StackTraceElementWrapper;
 import com.jetbrains.isaev.issues.StacktraceProvider;
 import com.jetbrains.isaev.ui.ParsedException;
 
@@ -85,7 +84,7 @@ public class YouTrackTest {
                     for (ParsedException exception : parsedExceptions) {
 
                         out.println(exception.getName() + ": " + exception.getOptionalMessage());
-                        for (StackTraceElementWrapper element : exception.getStacktrace()) {
+                        for (com.jetbrains.isaev.issues.StackTraceElement element : exception.getStacktrace()) {
                             out.println("at " + element.toString());
                         }
                         out.println("_____");

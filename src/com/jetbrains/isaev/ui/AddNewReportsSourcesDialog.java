@@ -1,19 +1,19 @@
 package com.jetbrains.isaev.ui;
 
 import com.intellij.CommonBundle;
-import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.util.SystemInfo;
 import com.intellij.ui.components.JBList;
+import com.jetbrains.isaev.GlobalVariables;
+import com.jetbrains.isaev.common.BTIssue;
 import com.jetbrains.isaev.common.CommonBTProject;
-import com.jetbrains.isaev.common.CommonIssue;
+import com.jetbrains.isaev.dao.SerializableIssuesDAO;
 import com.jetbrains.isaev.integration.youtrack.client.YouTrackClient;
 import com.jetbrains.isaev.integration.youtrack.client.YouTrackClientFactory;
 import com.jetbrains.isaev.integration.youtrack.client.YouTrackIssue;
 import com.jetbrains.isaev.integration.youtrack.client.YouTrackProject;
 import com.jetbrains.isaev.issues.StacktraceProvider;
-import com.jetbrains.isaev.state.BTAccountStorageProvider;
 import com.jetbrains.isaev.state.CommonBTAccount;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -58,14 +58,12 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
     };
     private DefaultListModel<CommonBTAccount> model = new DefaultListModel<>();
     private DefaultListModel<SelectableItem<CommonBTProject>> projectsModel = new DefaultListModel<>();
-    private Project project;
-    private BTAccountStorageProvider provider;
+    private SerializableIssuesDAO issuesDAO = SerializableIssuesDAO.getInstance();
     private ApplyAction applyAction = new ApplyAction();
 
-    public AddNewReportsSourcesDialog(Project project) {
-        super(project, false);
-        this.project = project;
-        this.dialog = new MyDialog(project);
+    public AddNewReportsSourcesDialog() {
+        super(GlobalVariables.project, false);
+        this.dialog = new MyDialog();
         init();
         clientFactory = new YouTrackClientFactory();
         setTitle("Sources of Reports");
@@ -108,7 +106,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
         }
 
         public void actionPerformed(final ActionEvent e) {
-            Messages.showInfoMessage(project, String.valueOf(lastSelectedPos), "Title");
+            Messages.showInfoMessage(GlobalVariables.project, String.valueOf(lastSelectedPos), "Title");
             if (lastSelectedPos != -1 && lastSelectedPos < model.size()) {
                 CommonBTAccount account = model.get(lastSelectedPos);
                 account.setDomainName(dialog.textField1.getText());
@@ -116,7 +114,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
                 account.setPassword(new String(dialog.passwordField1.getPassword()));
             }
             dialog.accountsUIList.repaint();
-            provider.getState().setBtAccounts(getAccountsFromUI());
+            issuesDAO.getState().setAccounts(getAccountsFromUI());
             setEnabled(false);
         }
     }
@@ -132,15 +130,14 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
         private JBList projectsList;
         private JButton processIssuesButton;
 
-        public MyDialog(final Project project) {
+        public MyDialog() {
             setContentPane(contentPane);
             setModal(true);
-            provider = project.getComponent(BTAccountStorageProvider.class);
-            if (provider.getState().getBtAccounts() == null) {
-                provider.getState().setBtAccounts(new ArrayList<CommonBTAccount>());
-            }
-            for (CommonBTAccount acc : provider.getState().getBtAccounts()) {
+            for (CommonBTAccount acc : issuesDAO.getAccounts()) {
                 model.addElement(acc);
+                for (CommonBTProject proj : acc.getProjects())
+                    for (BTIssue issue : proj.getIssues())
+                        System.out.println("\n__________\n" + issue.getDescription() + "\n__________\n");
             }
             accountsUIList.setModel(model);
             accountsUIList.getSelectionModel().setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -156,7 +153,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
                         lastSelectedPos = e.getLastIndex();
                     }
                     projectsModel.clear();
-                    Messages.showInfoMessage(project, String.valueOf(tmp + " " + e.getFirstIndex()) + " " + e.getLastIndex() + " " + lastSelectedPos, "Title");
+                    Messages.showInfoMessage(GlobalVariables.project, String.valueOf(tmp + " " + e.getFirstIndex()) + " " + e.getLastIndex() + " " + lastSelectedPos, "Title");
                     if (model.size() > 0) {
                         CommonBTAccount account = model.get(lastSelectedPos);
                         textField1.setText(account.getDomainName());
@@ -172,11 +169,13 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
             accountsUIList.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
-                    int index = accountsUIList.locationToIndex(e.getPoint());
-                    CommonBTAccount item = (CommonBTAccount) accountsUIList.getModel().getElementAt(index);
-                    int k = 0;
-                    for (CommonBTProject project1 : item.getProjects()) k += project1.getIssues().size();
-                    Messages.showInfoMessage("Hello " + k, "Title");
+                    if (accountsUIList.getModel().getSize() > 0) {
+                        int index = accountsUIList.locationToIndex(e.getPoint());
+                        CommonBTAccount item = (CommonBTAccount) accountsUIList.getModel().getElementAt(index);
+                        int k = 0;
+                        for (CommonBTProject project1 : item.getProjects()) k += project1.getIssues().size();
+                        Messages.showInfoMessage("Hello " + k, "Title");
+                    }
 
                 }
             });
@@ -242,7 +241,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
                             for (YouTrackIssue issue : issues) {
                                 List<ParsedException> parsedExceptions = provider.parseAllExceptions(issue.getSummary() + " " + issue.getDescription());
                                 if (parsedExceptions.size() != 0) {
-                                    CommonIssue is = new CommonIssue();
+                                    BTIssue is = new BTIssue();
                                     is.setDescription(issue.getDescription());
                                     is.setTitle(issue.getSummary());
                                     is.setExceptions(parsedExceptions);
@@ -294,7 +293,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
 
         private void onOK() {
 // add your code here
-            provider.getState().setBtAccounts(getAccountsFromUI());
+            issuesDAO.getState().setAccounts(getAccountsFromUI());
             dispose();
         }
 

@@ -1,5 +1,6 @@
 <idea-plugin version="2">
     <id>com.yourcompany.unique.plugin.id</id>
+
     <fullName>Plugin display fullName here</fullName>
     <version>1.0</version>
     <vendor email="support@yourcompany.com" url="http://www.yourcompany.com">YourCompany</vendor>
@@ -39,10 +40,10 @@
 
     <project-components>
         <!-- Add your project components here -->
-        <component>
+        <!--<component>
 
             <implementation-class>com.jetbrains.isaev.state.BTAccountStorageProvider</implementation-class>
-        </component>
+        </component>-->
         <component>
             <implementation-class>com.jetbrains.isaev.ui.TempProjectComponent</implementation-class>
         </component>

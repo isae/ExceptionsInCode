@@ -24,5 +24,6 @@ public class MyPluginRegistration implements ApplicationComponent {
 
     // Disposes system resources.
     public void disposeComponent() {
+
     }
 }

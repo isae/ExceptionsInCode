@@ -19,7 +19,7 @@ public class AddNewBugtrackersAction extends AnAction {
     public void actionPerformed(AnActionEvent e) {
         Project project = e.getData(PlatformDataKeys.PROJECT);
 
-        final AddNewReportsSourcesDialog dialog = new AddNewReportsSourcesDialog(project);
+        final AddNewReportsSourcesDialog dialog = new AddNewReportsSourcesDialog();
         dialog.show();
         if (!dialog.isOK()) {
             return;

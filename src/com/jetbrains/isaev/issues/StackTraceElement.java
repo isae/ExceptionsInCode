@@ -1,29 +1,37 @@
 package com.jetbrains.isaev.issues;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import com.jetbrains.isaev.ui.ParsedException;
+
 import java.io.Serializable;
 
 /**
  * Created by Ilya.Isaev on 30.07.2014.
  */
-public class StackTraceElementWrapper implements Serializable {
+@JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
+public class StackTraceElement implements Serializable {
 
     private String declaringClass;
     private String methodName;
     private String fileName;
     private int lineNumber;
+    @JsonBackReference
+    private ParsedException exception;
 
-    public StackTraceElementWrapper(String className, String methodName, String fileName, int lineNumber) {
+    public StackTraceElement(String className, String methodName, String fileName, int lineNumber) {
         this.declaringClass = className;
         this.methodName = methodName;
         this.fileName = fileName;
         this.lineNumber = lineNumber;
     }
 
-    public StackTraceElementWrapper() {
+    public StackTraceElement() {
     }
 
-    public static StackTraceElementWrapper wrap(StackTraceElement element) {
-        return new StackTraceElementWrapper(element.getClassName(), element.getMethodName(), element.getFileName(), element.getLineNumber());
+    public static StackTraceElement wrap(java.lang.StackTraceElement element) {
+        return new StackTraceElement(element.getClassName(), element.getMethodName(), element.getFileName(), element.getLineNumber());
     }
 
     public String getDeclaringClass() {
