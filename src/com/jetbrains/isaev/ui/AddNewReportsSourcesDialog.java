@@ -254,12 +254,13 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
                                 }
                             }*/
                             for (String s : ExceptionTest.issues) {
-                                YouTrackIssue issue = client.getIssue(s, true);
+                                YouTrackIssue issue = client.getIssue(s, false);
+                                YouTrackIssue issue2 = client.getIssue(s, true);
                                 List<ParsedException> parsedExceptions = provider.parseAllExceptions(issue.getSummary() + " " + issue.getDescription());
                                 if (parsedExceptions.size() != 0) {
                                     BTIssue is = new BTIssue();
-                                    is.setDescription(issue.getDescription());
-                                    is.setTitle(issue.getSummary());
+                                    is.setDescription(issue2.getDescription());
+                                    is.setTitle(issue2.getSummary());
                                     is.setNumber(issue.getId());
                                     is.setExceptions(parsedExceptions);
                                     project.getIssues().add(is);
@@ -326,6 +327,6 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
     }
 
     private static class ExceptionTest {
-        public static String[] issues = {"IDEA-104113"};
+        public static String[] issues = {"IDEA-104113", "IDEA-121168"};
     }
 }

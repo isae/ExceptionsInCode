@@ -129,7 +129,7 @@ public class StacktraceProvider {
                 Map<String, List<StackTraceElement>> mmap = issuesDAO.getMethodNameToSTElement();
                 Map<String, List<StackTraceElement>> fmap = issuesDAO.getFileNameToSTElement();
                 if (!cmap.containsKey(element.getDeclaringClass()))
-                    cmap.put(element.getDeclaringClass(), new ArrayList<StackTraceElement>());
+                    cmap.put(element.getDeclaringClass(), new ArrayList<>());
                 String tmp = element.getDeclaringClass() + "." + element.getMethodName();
                 if (!mmap.containsKey(tmp))
                     mmap.put(tmp, new ArrayList<StackTraceElement>());
