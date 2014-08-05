@@ -11,7 +11,7 @@ public class ZipTest {
         System.out.println(tmp);
         byte[] tmp2 = ZipUtils.compress(tmp);
         String tmp3 = ZipUtils.decompress(tmp2);
-        System.out.println(tmp3);
+        assert tmp.equals(tmp3);
     }
 
 }

@@ -62,8 +62,8 @@ public class DumbAction2 extends AnAction {
         //   JBPopupFactory.getInstance().createConfirmation("title", "onYes", "noText", new A(),0).showCenteredInCurrentWindow(project);
         // String txt= Messages.showInputDialog(project, "What is your name?", "Input your name", Messages.getQuestionIcon());
         //  Notifications.Bus.notify(new Notification("Bom Bom","Title","Content", NotificationType.WARNING));
-        //   hints.showErrorHint(editor, "OLOLO!!! RED Hint!!", HintManager.LEFT);
-        //hints.showErrorHint(editor, "OLOLO!!! Second RED Hint!!", HintManager.RIGHT);
+        //   notifications.showErrorHint(editor, "OLOLO!!! RED Hint!!", HintManager.LEFT);
+        //notifications.showErrorHint(editor, "OLOLO!!! Second RED Hint!!", HintManager.RIGHT);
       /*  JComponent label1 = MyHintUtils.createErrorLabel("OLOLO!!! RED Hint!!");
         JComponent label2 = MyHintUtils.createErrorLabel("OLOLO!!! Second RED Hint!!");
         RelativePoint p1 = new RelativePoint(new Point(50,50));

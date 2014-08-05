@@ -3,7 +3,6 @@ package com.jetbrains.isaev.state;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
-import com.jetbrains.isaev.common.CommonBTProject;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -21,7 +20,7 @@ public class CommonBTAccount implements Serializable {
     private String password;
     private BTAccountType type;
 
-    @JsonManagedReference
+    @JsonManagedReference(value = "projects")
     private List<CommonBTProject> projects;
 
     public CommonBTAccount() {

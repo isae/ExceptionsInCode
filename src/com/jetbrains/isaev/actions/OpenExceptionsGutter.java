@@ -4,7 +4,7 @@ import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.PlatformDataKeys;
 import com.intellij.openapi.actionSystem.ToggleAction;
 import com.intellij.openapi.editor.Editor;
-import com.jetbrains.isaev.hints.IssuesExceptionsGutter;
+import com.jetbrains.isaev.notifications.IssuesExceptionsGutter;
 
 /**
  * User: Xottab

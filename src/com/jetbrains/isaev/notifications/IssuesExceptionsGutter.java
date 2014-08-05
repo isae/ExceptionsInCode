@@ -1,4 +1,4 @@
-package com.jetbrains.isaev.hints;
+package com.jetbrains.isaev.notifications;
 
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.diagnostic.Logger;

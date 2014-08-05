@@ -3,9 +3,9 @@ package com.jetbrains.isaev.dao;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.intellij.openapi.diagnostic.Logger;
 import com.jetbrains.isaev.GlobalVariables;
-import com.jetbrains.isaev.common.CommonBTProject;
 import com.jetbrains.isaev.issues.StackTraceElement;
 import com.jetbrains.isaev.state.CommonBTAccount;
+import com.jetbrains.isaev.state.CommonBTProject;
 
 import java.io.File;
 import java.io.IOException;

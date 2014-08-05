@@ -6,18 +6,17 @@ import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.util.SystemInfo;
 import com.intellij.ui.components.JBList;
 import com.jetbrains.isaev.GlobalVariables;
-import com.jetbrains.isaev.common.BTIssue;
-import com.jetbrains.isaev.common.CommonBTProject;
 import com.jetbrains.isaev.dao.SerializableIssuesDAO;
 import com.jetbrains.isaev.integration.youtrack.client.YouTrackClient;
 import com.jetbrains.isaev.integration.youtrack.client.YouTrackClientFactory;
 import com.jetbrains.isaev.integration.youtrack.client.YouTrackIssue;
 import com.jetbrains.isaev.integration.youtrack.client.YouTrackProject;
 import com.jetbrains.isaev.issues.StacktraceProvider;
+import com.jetbrains.isaev.state.BTIssue;
 import com.jetbrains.isaev.state.CommonBTAccount;
+import com.jetbrains.isaev.state.CommonBTProject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import test.YouTrackTest;
 
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
@@ -34,10 +33,8 @@ import java.util.List;
  * Date: 25.07.2014
  */
 public class AddNewReportsSourcesDialog extends DialogWrapper {
-    private static YouTrackClientFactory clientFactory;
-    private final MyDialog dialog;
-    int lastSelectedPos = -1;
-    DocumentListener changeListener = new DocumentListener() {
+    static int lastSelectedPos = -1;
+    static DocumentListener changeListener = new DocumentListener() {
         public void changedUpdate(DocumentEvent e) {
             warn();
         }
@@ -56,17 +53,27 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
             }
         }
     };
-    private DefaultListModel<CommonBTAccount> model = new DefaultListModel<>();
-    private DefaultListModel<SelectableItem<CommonBTProject>> projectsModel = new DefaultListModel<>();
-    private SerializableIssuesDAO issuesDAO = SerializableIssuesDAO.getInstance();
-    private ApplyAction applyAction = new ApplyAction();
+    private static YouTrackClientFactory clientFactory;
+    private static MyDialog dialog;
+    private static DefaultListModel<CommonBTAccount> model = new DefaultListModel<>();
+    private static DefaultListModel<SelectableItem<CommonBTProject>> projectsModel = new DefaultListModel<>();
+    private static SerializableIssuesDAO issuesDAO = SerializableIssuesDAO.getInstance();
+    private static ApplyAction applyAction = new ApplyAction();
 
     public AddNewReportsSourcesDialog() {
         super(GlobalVariables.project, false);
-        this.dialog = new MyDialog();
+        dialog = new MyDialog();
         init();
         clientFactory = new YouTrackClientFactory();
         setTitle("Sources of Reports");
+    }
+
+    private static List<CommonBTAccount> getAccountsFromUI() {
+        List<CommonBTAccount> accounts = new ArrayList<>(model.size());
+        for (int i = 0; i < model.size(); i++) {
+            accounts.add(model.get(i));
+        }
+        return accounts;
     }
 
     @NotNull
@@ -85,21 +92,13 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
         }
     }
 
-    private List<CommonBTAccount> getAccountsFromUI() {
-        List<CommonBTAccount> accounts = new ArrayList<>(model.size());
-        for (int i = 0; i < model.size(); i++) {
-            accounts.add(model.get(i));
-        }
-        return accounts;
-    }
-
     @Nullable
     @Override
     protected JComponent createCenterPanel() {
         return dialog.getContentPane();
     }
 
-    private class ApplyAction extends AbstractAction {
+    private static class ApplyAction extends AbstractAction {
         public ApplyAction() {
             super(CommonBundle.getApplyButtonText());
             setEnabled(false);
@@ -119,7 +118,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
         }
     }
 
-    public class MyDialog extends JDialog {
+    public static class MyDialog extends JDialog {
         private JPanel contentPane;
         private JButton addButton;
         private JTextField textField1;
@@ -133,11 +132,14 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
         public MyDialog() {
             setContentPane(contentPane);
             setModal(true);
+            textField1.setText("http://youtrack.jetbrains.com");
+            textField2.setText("Ilya.Isaev@jetbrains.com");
+            passwordField1.setText(".Lu85Ga");
             for (CommonBTAccount acc : issuesDAO.getAccounts()) {
                 model.addElement(acc);
                 for (CommonBTProject proj : acc.getProjects())
                     for (BTIssue issue : proj.getIssues())
-                        System.out.println("\n__________\n" + issue.getDescription() + "\n__________\n");
+                        System.out.println(issue.getNumber());
             }
             accountsUIList.setModel(model);
             accountsUIList.getSelectionModel().setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -232,24 +234,38 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
                     CommonBTAccount account = model.getElementAt(lastSelectedPos);
                     List<CommonBTProject> projects = account.getProjects();
                     for (CommonBTProject project : projects) {
-                        if (project.isMustBeUpdated()) {
+                        //   System.out.println(project.getShortName()+" "+project.getShortName().equals("IDEA"));
+                        if (project.isMustBeUpdated() & project.getShortName().equals("IDEA")) {
                             YouTrackClient client = clientFactory.getClient(textField1.getText());
                             client.login(textField2.getText(), new String(passwordField1.getPassword()));
-                            List<YouTrackIssue> issues = YouTrackTest.getIssuesAvoidBugged(project.getShortName(), "", 0, 1000, project.getLastUpdated(), client, null);
+                            //   List<YouTrackIssue> issues = YouTrackTest.getIssuesAvoidBugged(project.getShortName(), "", 0, 1000, project.getLastUpdated(), client, null);
                             StacktraceProvider provider = StacktraceProvider.getInstance();
-                            int k = 0;
-                            for (YouTrackIssue issue : issues) {
+                            //  int k = 0;
+                            /*for (YouTrackIssue issue : issues) {
                                 List<ParsedException> parsedExceptions = provider.parseAllExceptions(issue.getSummary() + " " + issue.getDescription());
                                 if (parsedExceptions.size() != 0) {
                                     BTIssue is = new BTIssue();
                                     is.setDescription(issue.getDescription());
                                     is.setTitle(issue.getSummary());
+                                    is.setNumber(issue.getId());
                                     is.setExceptions(parsedExceptions);
                                     project.getIssues().add(is);
                                     ++k;
                                 }
+                            }*/
+                            for (String s : ExceptionTest.issues) {
+                                YouTrackIssue issue = client.getIssue(s, true);
+                                List<ParsedException> parsedExceptions = provider.parseAllExceptions(issue.getSummary() + " " + issue.getDescription());
+                                if (parsedExceptions.size() != 0) {
+                                    BTIssue is = new BTIssue();
+                                    is.setDescription(issue.getDescription());
+                                    is.setTitle(issue.getSummary());
+                                    is.setNumber(issue.getId());
+                                    is.setExceptions(parsedExceptions);
+                                    project.getIssues().add(is);
+                                }
                             }
-                            Messages.showInfoMessage("Hello: " + k, "");
+                            //Messages.showInfoMessage("Hello: " + k, "");
                             applyAction.setEnabled(true);
                             project.setLastUpdated(System.currentTimeMillis());
                         }
@@ -307,5 +323,9 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
         private void createUIComponents() {
             // TODO: place custom component creation code here
         }
+    }
+
+    private static class ExceptionTest {
+        public static String[] issues = {"IDEA-104113"};
     }
 }

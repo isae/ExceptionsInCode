@@ -28,7 +28,9 @@
     <extensions defaultExtensionNs="com.intellij">
         <!-- Add your extensions here -->
         <codeInsight.lineMarkerProvider language="JAVA"
-                                        implementationClass="com.jetbrains.isaev.hints.MyLinesMarkerProvider"/>
+                                        implementationClass="com.jetbrains.isaev.notifications.MyLinesMarkerProvider"/>
+        <documentationProvider
+                implementation="com.jetbrains.isaev.notifications.IssueDescriptionDocumentationProvider"/>
     </extensions>
 
     <application-components>
@@ -99,7 +101,7 @@
                 text="Exception Clicked Action">
             <add-to-group group-id="EditorPopupMenu" anchor="first"/>
         </action>
-        <!-- <group id="com.jetbrains.isaevv.actions.MyActionGroup" class="com.jetbrains.isaevv.actions.MyActionGroup"
+        <!-- <group id="com.jetbrains.isaev.actions.MyActionGroup" class="com.jetbrains.isaevv.actions.MyActionGroup"
                 text="My Action Group">
 
          </group>-->

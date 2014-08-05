@@ -1,8 +1,8 @@
 package com.jetbrains.isaev.dao;
 
-import com.jetbrains.isaev.common.CommonBTProject;
 import com.jetbrains.isaev.issues.StackTraceElement;
 import com.jetbrains.isaev.state.CommonBTAccount;
+import com.jetbrains.isaev.state.CommonBTProject;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -40,7 +40,7 @@ public class ProjectState implements Serializable {
     }
 
     public Map<String, List<StackTraceElement>> getMethodNameToSTElement() {
-        if (methodNameToSTElement == null) return new HashMap<>();
+        if (methodNameToSTElement == null) methodNameToSTElement = new HashMap<>();
         return methodNameToSTElement;
     }
 

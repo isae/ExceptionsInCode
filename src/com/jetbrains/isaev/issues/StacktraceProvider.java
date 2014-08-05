@@ -120,18 +120,23 @@ public class StacktraceProvider {
             }
         }
         for (ParsedException exception : result) {
-            for (StackTraceElement element : exception.getStacktrace()) {
+            List<StackTraceElement> sTrace = exception.getStacktrace();
+            for (int i = 0; i < sTrace.size(); i++) {
+                StackTraceElement element = sTrace.get(i);
+                if (i > 0) element.setPrev(sTrace.get(i - 1));
+                if (i < sTrace.size() - 1) element.setNext(sTrace.get(i + 1));
                 Map<String, List<StackTraceElement>> cmap = issuesDAO.getClassNameToSTElement();
                 Map<String, List<StackTraceElement>> mmap = issuesDAO.getMethodNameToSTElement();
                 Map<String, List<StackTraceElement>> fmap = issuesDAO.getFileNameToSTElement();
                 if (!cmap.containsKey(element.getDeclaringClass()))
                     cmap.put(element.getDeclaringClass(), new ArrayList<StackTraceElement>());
-                if (!mmap.containsKey(element.getMethodName()))
-                    mmap.put(element.getMethodName(), new ArrayList<StackTraceElement>());
+                String tmp = element.getDeclaringClass() + "." + element.getMethodName();
+                if (!mmap.containsKey(tmp))
+                    mmap.put(tmp, new ArrayList<StackTraceElement>());
                 if (!fmap.containsKey(element.getFileName()))
                     fmap.put(element.getFileName(), new ArrayList<StackTraceElement>());
                 cmap.get(element.getDeclaringClass()).add(element);
-                mmap.get(element.getMethodName()).add(element);
+                mmap.get(tmp).add(element);
                 fmap.get(element.getFileName()).add(element);
             }
         }

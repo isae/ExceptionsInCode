@@ -1,7 +1,7 @@
 package com.jetbrains.isaev.ui;
 
 import com.intellij.ui.components.JBCheckBox;
-import com.jetbrains.isaev.common.CommonBTProject;
+import com.jetbrains.isaev.state.CommonBTProject;
 
 import javax.swing.*;
 import java.awt.*;

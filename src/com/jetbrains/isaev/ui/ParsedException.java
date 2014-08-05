@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
-import com.jetbrains.isaev.common.BTIssue;
 import com.jetbrains.isaev.issues.StackTraceElement;
+import com.jetbrains.isaev.state.BTIssue;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -19,9 +19,9 @@ import java.util.List;
 public class ParsedException implements Serializable {
     private String name;
     private String optionalMessage;
-    @JsonBackReference
+    @JsonBackReference(value = "exceptions")
     private BTIssue issue;
-    @JsonManagedReference
+    @JsonManagedReference(value = "trace")
     private List<StackTraceElement> stacktrace = new ArrayList<>();
 
     public ParsedException(String name, List<StackTraceElement> stacktrace) {

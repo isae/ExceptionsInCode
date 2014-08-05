@@ -1,10 +1,9 @@
-package com.jetbrains.isaev.common;
+package com.jetbrains.isaev.state;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
-import com.jetbrains.isaev.state.CommonBTAccount;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -19,10 +18,10 @@ public class CommonBTProject implements Serializable {
     private String fullName;
     private String shortName;
 
-    @JsonBackReference
+    @JsonBackReference(value = "projects")
     private CommonBTAccount btAccount;
 
-    @JsonManagedReference
+    @JsonManagedReference(value = "issues")
     private List<BTIssue> issues = new ArrayList<>();
     private long lastUpdated;
     private boolean mustBeUpdated = false;
