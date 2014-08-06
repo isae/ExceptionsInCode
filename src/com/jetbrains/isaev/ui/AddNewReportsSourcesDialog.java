@@ -99,7 +99,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
                     lastSelectedPos = e.getLastIndex();
                 }
                 projectsModel.clear();
-                Messages.showInfoMessage(GlobalVariables.project, String.valueOf(tmp + " " + e.getFirstIndex()) + " " + e.getLastIndex() + " " + lastSelectedPos, "Title");
+                // Messages.showInfoMessage(GlobalVariables.project, String.valueOf(tmp + " " + e.getFirstIndex()) + " " + e.getLastIndex() + " " + lastSelectedPos, "Title");
                 if (model.size() > 0) {
                     BTAccount account = model.get(lastSelectedPos);
                     textField1.setText(account.getDomainName());
