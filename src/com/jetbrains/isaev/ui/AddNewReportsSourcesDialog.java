@@ -2,7 +2,6 @@ package com.jetbrains.isaev.ui;
 
 import com.intellij.CommonBundle;
 import com.intellij.openapi.ui.DialogWrapper;
-import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.util.SystemInfo;
 import com.intellij.ui.components.JBList;
 import com.jetbrains.isaev.GlobalVariables;
@@ -120,7 +119,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
                     BTAccount item = (BTAccount) accountsUIList.getModel().getElementAt(index);
                     int k = 0;
                     for (BTProject project1 : item.getProjects()) k += project1.getIssues().size();
-                    Messages.showInfoMessage("Hello " + k, "Title");
+                    //Messages.showInfoMessage("Hello " + k, "Title");
                 }
 
             }
