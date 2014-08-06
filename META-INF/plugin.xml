@@ -82,6 +82,9 @@
             <action id="exceptions.register.sources"
                     class="com.jetbrains.isaev.actions.AddNewBugtrackersAction">
             </action>
+            <action id="exceptions.show.all"
+                    class="com.jetbrains.isaev.actions.ShowAllProjectIssuesAction">
+            </action>
         </group>
 
         <group id="exceptions.in.code.main">
