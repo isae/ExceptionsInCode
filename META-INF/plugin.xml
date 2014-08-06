@@ -27,6 +27,9 @@
 
     <extensions defaultExtensionNs="com.intellij">
         <!-- Add your extensions here -->
+        <toolWindow id="Issues" icon="/com/jetbrains/isaev/resources/icons/warn.png" anchor="bottom"
+                    factoryClass="com.jetbrains.isaev.ui.ShowAllIssuesToolWindowFactory"/>
+
         <codeInsight.lineMarkerProvider language="JAVA"
                                         implementationClass="com.jetbrains.isaev.notifications.MyLinesMarkerProvider"/>
         <documentationProvider
