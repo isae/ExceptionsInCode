@@ -47,7 +47,7 @@
             <implementation-class>com.jetbrains.isaev.state.BTAccountStorageProvider</implementation-class>
         </component>-->
         <component>
-            <implementation-class>com.jetbrains.isaev.ui.TempProjectComponent</implementation-class>
+            <implementation-class>com.jetbrains.isaev.ui.MyProjectComponent</implementation-class>
         </component>
     </project-components>
 

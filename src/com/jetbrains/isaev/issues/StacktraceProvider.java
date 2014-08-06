@@ -106,8 +106,11 @@ public class StacktraceProvider {
                         f = true;
                         break;
                     }
-                if (f) stackTrace.add(new StackTraceElement(className, methodName,
-                        sourceFile, lineNum));
+                if (f) {
+                    stackTrace.add(new StackTraceElement(className, methodName,
+                            sourceFile, lineNum));
+                    break;
+                }
             }
 
             result.get(i).setStacktrace(stackTrace);

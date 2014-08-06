@@ -10,10 +10,10 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Created by Ilya.Isaev on 30.07.2014.
  */
-public class TempProjectComponent implements ProjectComponent {
-    private static final Logger logger = Logger.getInstance(TempProjectComponent.class);
+public class MyProjectComponent implements ProjectComponent {
+    private static final Logger logger = Logger.getInstance(MyProjectComponent.class);
 
-    public TempProjectComponent(Project project) {
+    public MyProjectComponent(Project project) {
         GlobalVariables.project = project;
     }
 
