@@ -13,7 +13,7 @@ import java.util.List;
  * Date: 25.07.2014
  */
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
-public class CommonBTAccount implements Serializable {
+public class BTAccount implements Serializable {
 
     private String domainName;
     private String login;
@@ -21,12 +21,12 @@ public class CommonBTAccount implements Serializable {
     private BTAccountType type;
 
     @JsonManagedReference(value = "projects")
-    private List<CommonBTProject> projects;
+    private List<BTProject> projects;
 
-    public CommonBTAccount() {
+    public BTAccount() {
     }
 
-    public CommonBTAccount(String domainName, String login, String password) {
+    public BTAccount(String domainName, String login, String password) {
 
         this.domainName = domainName;
         this.login = login;
@@ -65,14 +65,14 @@ public class CommonBTAccount implements Serializable {
         this.password = password;
     }
 
-    public List<CommonBTProject> getProjects() {
+    public List<BTProject> getProjects() {
         if (projects == null) {
             projects = new ArrayList<>(0);
         }
         return projects;
     }
 
-    public void setProjects(List<CommonBTProject> projects) {
+    public void setProjects(List<BTProject> projects) {
         this.projects = projects;
     }
 

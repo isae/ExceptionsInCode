@@ -1,7 +1,7 @@
 package com.jetbrains.isaev.ui;
 
 import com.intellij.ui.components.JBCheckBox;
-import com.jetbrains.isaev.state.CommonBTProject;
+import com.jetbrains.isaev.state.BTProject;
 
 /**
  * User: Xottab
@@ -20,7 +20,7 @@ public class SelectableItem<T> {
         this.checkbox = checkbox;
     }
 
-    public static JBCheckBox getCheckBox(CommonBTProject project) {
+    public static JBCheckBox getCheckBox(BTProject project) {
         return new JBCheckBox(project.getFullName(), project.isMustBeUpdated());
     }
 }

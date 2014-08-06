@@ -21,7 +21,7 @@ public class BTIssue implements Serializable {
     private String number;
     private byte[] zippedDescr;
     @JsonBackReference(value = "issues")
-    private CommonBTProject project;
+    private BTProject project;
     @JsonManagedReference(value = "exceptions")
     private List<ParsedException> exceptions = new ArrayList<>();
 
@@ -57,6 +57,10 @@ public class BTIssue implements Serializable {
         return number + ": " + shortenTitle(title);
     }
 
+    public String getDrawableDescription() {
+        return number + ": " + title;
+    }
+
     public String getNumber() {
         return number;
     }
@@ -65,11 +69,11 @@ public class BTIssue implements Serializable {
         this.number = number;
     }
 
-    public CommonBTProject getProject() {
+    public BTProject getProject() {
         return project;
     }
 
-    public void setProject(CommonBTProject project) {
+    public void setProject(BTProject project) {
         this.project = project;
     }
 

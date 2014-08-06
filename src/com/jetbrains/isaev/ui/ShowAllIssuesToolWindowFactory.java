@@ -10,6 +10,6 @@ import com.intellij.openapi.wm.ToolWindowFactory;
 public class ShowAllIssuesToolWindowFactory implements ToolWindowFactory {
     @Override
     public void createToolWindowContent(Project project, ToolWindow toolWindow) {
-        //toolWindow.getComponent().add(new JBList("Privet","Poka","Privet","Poka","Privet","Poka","Privet","Poka"));
+        toolWindow.getComponent().add(new AllIssuesToolWindowList());
     }
 }

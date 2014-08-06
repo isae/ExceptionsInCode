@@ -13,28 +13,28 @@ import java.util.List;
  * Created by Ilya.Isaev on 30.07.2014.
  */
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
-public class CommonBTProject implements Serializable {
+public class BTProject implements Serializable {
 
     private String fullName;
     private String shortName;
 
     @JsonBackReference(value = "projects")
-    private CommonBTAccount btAccount;
+    private BTAccount btAccount;
 
     @JsonManagedReference(value = "issues")
     private List<BTIssue> issues = new ArrayList<>();
     private long lastUpdated;
     private boolean mustBeUpdated = false;
 
-    public CommonBTProject(String projectFullName, String projectShortName) {
+    public BTProject(String projectFullName, String projectShortName) {
         this.fullName = projectFullName;
         this.shortName = projectShortName;
     }
 
-    public CommonBTProject() {
+    public BTProject() {
     }
 
-    public CommonBTProject(String name) {
+    public BTProject(String name) {
         this.fullName = name;
     }
 

@@ -7,6 +7,7 @@ import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.DumbAware;
 import com.intellij.openapi.project.DumbService;
 import com.intellij.psi.*;
+import com.jetbrains.isaev.dao.IssuesDAO;
 import com.jetbrains.isaev.dao.SerializableIssuesDAO;
 import com.jetbrains.isaev.issues.StackTraceElement;
 import com.jetbrains.isaev.state.BTIssue;
@@ -25,7 +26,7 @@ public class MyLinesMarkerProvider extends IconLineMarkerProvider implements Dum
     private static final Logger logger = Logger.getInstance(MyLinesMarkerProvider.class);
     static Icon icon = IconProvider.getIcon(IconProvider.IconRef.WARN);
     Icon icon2 = IconProvider.getIcon(IconProvider.IconRef.YOUTRACK);
-    private SerializableIssuesDAO issuesDAO = SerializableIssuesDAO.getInstance();
+    private IssuesDAO issuesDAO = SerializableIssuesDAO.getInstance();
     private Map<Integer, Boolean> markersBySignature = new HashMap<>();
     private Map<String, Boolean> markersByMName = new HashMap<>();
     private PsiJavaFile currentlyOpened = null;

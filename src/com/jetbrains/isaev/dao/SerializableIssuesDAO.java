@@ -4,8 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.intellij.openapi.diagnostic.Logger;
 import com.jetbrains.isaev.GlobalVariables;
 import com.jetbrains.isaev.issues.StackTraceElement;
-import com.jetbrains.isaev.state.CommonBTAccount;
-import com.jetbrains.isaev.state.CommonBTProject;
+import com.jetbrains.isaev.state.BTAccount;
+import com.jetbrains.isaev.state.BTIssue;
+import com.jetbrains.isaev.state.BTProject;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,6 +24,7 @@ public class SerializableIssuesDAO implements IssuesDAO {
     private ObjectMapper mapper = new ObjectMapper();
     private ProjectState state = new ProjectState();
 
+
     private SerializableIssuesDAO() {
         try {
             databaseFile.createNewFile();
@@ -33,7 +35,7 @@ public class SerializableIssuesDAO implements IssuesDAO {
         }
     }
 
-    public static SerializableIssuesDAO getInstance() {
+    public static IssuesDAO getInstance() {
         if (instance == null) {
             instance = new SerializableIssuesDAO();
         }
@@ -48,35 +50,51 @@ public class SerializableIssuesDAO implements IssuesDAO {
         this.state = state;
     }
 
-    public void storeData() {
-        try {
-            mapper.writeValue(databaseFile, state);
-        } catch (IOException e) {
-            logger.warn(e);
-        }
+    @Override
+    public List<BTIssue> getIssues() {
 
+        return state.getIssues();
     }
 
 
-    public List<CommonBTProject> getProjects() {
+    @Override
+    public List<BTProject> getProjects() {
         return state.getProjects();
     }
 
-    public List<CommonBTAccount> getAccounts() {
+    @Override
+    public List<BTAccount> getAccounts() {
         return state.getAccounts();
     }
 
+    @Override
     public Map<String, List<StackTraceElement>> getMethodNameToSTElement() {
         return state.getMethodNameToSTElement();
     }
 
 
+    @Override
     public Map<String, List<StackTraceElement>> getClassNameToSTElement() {
         return state.getClassNameToSTElement();
     }
 
 
+    @Override
     public Map<String, List<StackTraceElement>> getFileNameToSTElement() {
         return state.getFileNameToSTElement();
+    }
+
+    @Override
+    public void saveAccounts(List<BTAccount> accountsFromUI) {
+        state.setAccounts(accountsFromUI);
+    }
+
+    @Override
+    public void saveState() {
+        try {
+            mapper.writeValue(databaseFile, state);
+        } catch (IOException e) {
+            logger.warn(e);
+        }
     }
 }

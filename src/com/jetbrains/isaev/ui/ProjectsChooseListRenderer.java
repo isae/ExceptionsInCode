@@ -1,7 +1,7 @@
 package com.jetbrains.isaev.ui;
 
 import com.intellij.ui.components.JBCheckBox;
-import com.jetbrains.isaev.state.CommonBTProject;
+import com.jetbrains.isaev.state.BTProject;
 
 import javax.swing.*;
 import java.awt.*;
@@ -12,10 +12,10 @@ import java.awt.event.ActionListener;
  * User: Xottab
  * Date: 29.07.2014
  */
-public class ProjectsChooseListRenderer implements ListCellRenderer<SelectableItem<CommonBTProject>> {
+public class ProjectsChooseListRenderer implements ListCellRenderer<SelectableItem<BTProject>> {
 
     @Override
-    public Component getListCellRendererComponent(JList<? extends SelectableItem<CommonBTProject>> list, SelectableItem<CommonBTProject> value, int index, boolean isSelected, boolean cellHasFocus) {
+    public Component getListCellRendererComponent(JList<? extends SelectableItem<BTProject>> list, SelectableItem<BTProject> value, int index, boolean isSelected, boolean cellHasFocus) {
         if (value.checkbox == null) {
             final JBCheckBox checkBox = new JBCheckBox(value.value.getFullName());
             value.checkbox = checkBox;

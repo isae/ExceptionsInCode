@@ -4,6 +4,7 @@ import com.intellij.openapi.components.ProjectComponent;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.jetbrains.isaev.GlobalVariables;
+import com.jetbrains.isaev.dao.IssuesDAO;
 import com.jetbrains.isaev.dao.SerializableIssuesDAO;
 import org.jetbrains.annotations.NotNull;
 
@@ -12,17 +13,19 @@ import org.jetbrains.annotations.NotNull;
  */
 public class MyProjectComponent implements ProjectComponent {
     private static final Logger logger = Logger.getInstance(MyProjectComponent.class);
+    IssuesDAO issuesDAO;
 
     public MyProjectComponent(Project project) {
         GlobalVariables.project = project;
     }
 
     public void initComponent() {
+        issuesDAO = SerializableIssuesDAO.getInstance();
         // TODO: insert component initialization logic here
     }
 
     public void disposeComponent() {
-        SerializableIssuesDAO.getInstance().storeData();
+        issuesDAO.saveState();
         // TODO: insert component disposal logic here
     }
 

@@ -4,6 +4,7 @@ import com.intellij.psi.PsiFile;
 import com.intellij.psi.search.FilenameIndex;
 import com.intellij.psi.search.GlobalSearchScope;
 import com.jetbrains.isaev.GlobalVariables;
+import com.jetbrains.isaev.dao.IssuesDAO;
 import com.jetbrains.isaev.dao.SerializableIssuesDAO;
 import com.jetbrains.isaev.ui.ParsedException;
 
@@ -42,7 +43,7 @@ public class StacktraceProvider {
     private static Matcher headlineMatcher;
     private static Matcher traceMatcher;
     private static StacktraceProvider instance;
-    private SerializableIssuesDAO issuesDAO;
+    private IssuesDAO issuesDAO;
 
     private StacktraceProvider() {
         headlinePattern = Pattern.compile(HEADLINE_PATTERN);
@@ -107,8 +108,10 @@ public class StacktraceProvider {
                         break;
                     }
                 if (f) {
-                    stackTrace.add(new StackTraceElement(className, methodName,
-                            sourceFile, lineNum));
+                    StackTraceElement element = new StackTraceElement(className, methodName,
+                            sourceFile, lineNum);
+                    element.setException(result.get(i));
+                    stackTrace.add(element);
                     break;
                 }
             }
