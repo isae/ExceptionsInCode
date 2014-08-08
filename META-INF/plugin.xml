@@ -1,7 +1,7 @@
 <idea-plugin version="2">
-    <id>com.yourcompany.unique.plugin.id</id>
+    <id>com.jetbrains.isaev.issues.in.code</id>
 
-    <fullName>Plugin display fullName here</fullName>
+    <fullName>Exceptions in code</fullName>
     <version>1.0</version>
     <vendor email="support@yourcompany.com" url="http://www.yourcompany.com">YourCompany</vendor>
 

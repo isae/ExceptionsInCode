@@ -6,47 +6,44 @@ import com.jetbrains.isaev.state.BTIssue;
 import com.jetbrains.isaev.state.BTProject;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by Ilya.Isaev on 01.08.2014.
  */
 public class ProjectState implements Serializable {
-    private List<BTProject> projects;
-    private List<BTAccount> accounts;
-    private List<BTIssue> issues;
+    private int exceptionsDepth;
+    private Map<String, BTProject> projects;
+    private Set<BTAccount> accounts;
+    private Map<String, BTIssue> issues;
     private Map<String, List<StackTraceElement>> methodNameToSTElement;
     private Map<String, List<StackTraceElement>> classNameToSTElement;
     private Map<String, List<StackTraceElement>> fileNameToSTElement;
 
-
-    public List<BTProject> getProjects() {
-        if (projects == null) projects = new ArrayList<>();
+    public Map<String, BTProject> getProjects() {
+        if (projects == null) projects = new HashMap<>();
         return projects;
     }
 
-    public void setProjects(List<BTProject> projects) {
+    public void setProjects(Map<String, BTProject> projects) {
         this.projects = projects;
     }
 
-    public List<BTIssue> getIssues() {
-        if (issues == null) issues = new ArrayList<>();
+    public Map<String, BTIssue> getIssues() {
+        if (issues == null) issues = new HashMap<>();
         return issues;
     }
 
-    public void setIssues(List<BTIssue> issues) {
+    public void setIssues(Map<String, BTIssue> issues) {
         this.issues = issues;
     }
 
-    public List<BTAccount> getAccounts() {
-        if (accounts == null) accounts = new ArrayList<>();
+    public Set<BTAccount> getAccounts() {
+        if (accounts == null) accounts = new HashSet<>();
         return accounts;
     }
 
-    public void setAccounts(List<BTAccount> accounts) {
+    public void setAccounts(Set<BTAccount> accounts) {
         this.accounts = accounts;
     }
 
@@ -75,5 +72,13 @@ public class ProjectState implements Serializable {
 
     public void setFileNameToSTElement(Map<String, List<StackTraceElement>> fileNameToSTElement) {
         this.fileNameToSTElement = fileNameToSTElement;
+    }
+
+    public int getExceptionsDepth() {
+        return exceptionsDepth;
+    }
+
+    public void setExceptionsDepth(int exceptionsDepth) {
+        this.exceptionsDepth = exceptionsDepth;
     }
 }

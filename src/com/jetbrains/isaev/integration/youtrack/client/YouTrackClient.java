@@ -98,8 +98,13 @@ public class YouTrackClient {
 
     public List<YouTrackIssue> getIssuesInProject(String projectName, String filter, int after,
                                                   int max, long updatedAfter) {
+        return getIssuesInProject(projectName, filter, after, max, updatedAfter, false);
+    }
+
+    public List<YouTrackIssue> getIssuesInProject(String projectName, String filter, int after,
+                                                  int max, long updatedAfter, boolean wikifyDescription) {
         try {
-            return service.path("/issue/byproject/").path(projectName).queryParam("filter", filter)
+            return service.path("/issue/byproject/").path(projectName).queryParam("filter", filter).queryParam("wikifyDescription", String.valueOf(wikifyDescription))
                     .queryParam("after", Integer.toString(after)).queryParam("max", Integer.toString(max))
                     .queryParam("updatedAfter", Long.toString(updatedAfter)).accept("application/xml")
                     .get(YouTrackIssuesList.class).getIssues();
@@ -167,7 +172,6 @@ public class YouTrackClient {
 
     /**
      * @param issue
-     *
      * @return new issue id from tracker, if successfully uploaded
      */
     public String putNewIssue(final YouTrackIssue issue) {
@@ -211,7 +215,6 @@ public class YouTrackClient {
 
     /**
      * @param filterQuery
-     *
      * @return number of relevant issues or all issues, if filter string is null return -1 if reach
      * max number of attempts
      */
@@ -227,7 +230,7 @@ public class YouTrackClient {
         int attemptCount = 0;
         while ((number =
                 resource.accept("application/xml").get(XmlNumberOfIssuesParser.class).getNumber()) == -1
-                && attemptCount++ < 10) {
+                && attemptCount++ < 100) {
             try {
                 Thread.sleep(1000);
             } catch (InterruptedException e) {

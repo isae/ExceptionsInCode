@@ -1,18 +1,19 @@
 package com.jetbrains.isaev.ui;
 
 import com.intellij.CommonBundle;
+import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.util.SystemInfo;
 import com.intellij.ui.components.JBList;
 import com.jetbrains.isaev.GlobalVariables;
 import com.jetbrains.isaev.dao.IssuesDAO;
 import com.jetbrains.isaev.dao.SerializableIssuesDAO;
+import com.jetbrains.isaev.integration.youtrack.YouTrackIssuesUploadStrategy;
 import com.jetbrains.isaev.integration.youtrack.client.YouTrackClient;
 import com.jetbrains.isaev.integration.youtrack.client.YouTrackClientFactory;
-import com.jetbrains.isaev.integration.youtrack.client.YouTrackIssue;
 import com.jetbrains.isaev.integration.youtrack.client.YouTrackProject;
-import com.jetbrains.isaev.issues.StacktraceProvider;
 import com.jetbrains.isaev.state.BTAccount;
+import com.jetbrains.isaev.state.BTAccountType;
 import com.jetbrains.isaev.state.BTIssue;
 import com.jetbrains.isaev.state.BTProject;
 import org.jetbrains.annotations.NotNull;
@@ -21,8 +22,6 @@ import org.jetbrains.annotations.Nullable;
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
@@ -33,7 +32,7 @@ import java.util.List;
  * Date: 25.07.2014
  */
 public class AddNewReportsSourcesDialog extends DialogWrapper {
-    static int lastSelectedPos = -1;
+    //static int lastSelectedPos = -1;
     private static YouTrackClientFactory clientFactory;
     private static DefaultListModel<BTAccount> model = new DefaultListModel<>();
     private static DefaultListModel<SelectableItem<BTProject>> projectsModel = new DefaultListModel<>();
@@ -88,27 +87,25 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
         accountsUIList.getSelectionModel().setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         accountsUIList.setCellRenderer(new ExceptionsSourceCellRenderer());
         projectsList.setCellRenderer(new ProjectsChooseListRenderer());
-        accountsUIList.addListSelectionListener(new ListSelectionListener() {
+        accountsUIList.addMouseListener(new MouseAdapter() {
             @Override
-            public void valueChanged(ListSelectionEvent e) {
-                int tmp = lastSelectedPos;
-                if (e.getFirstIndex() != lastSelectedPos) {
-                    lastSelectedPos = e.getFirstIndex();
-                } else {
-                    lastSelectedPos = e.getLastIndex();
-                }
-                projectsModel.clear();
-                // Messages.showInfoMessage(GlobalVariables.project, String.valueOf(tmp + " " + e.getFirstIndex()) + " " + e.getLastIndex() + " " + lastSelectedPos, "Title");
-                if (model.size() > 0) {
-                    BTAccount account = model.get(lastSelectedPos);
-                    textField1.setText(account.getDomainName());
-                    textField2.setText(account.getLogin());
-                    passwordField1.setText(account.getPassword());
-                    for (BTProject project : account.getProjects()) {
-                        projectsModel.addElement(new SelectableItem<>(project, SelectableItem.getCheckBox(project)));
+            public void mouseClicked(MouseEvent e) {
+                int tmp = accountsUIList.locationToIndex(e.getPoint());
+                if (tmp != -1) {
+                    projectsModel.clear();
+                    // Messages.showInfoMessage(GlobalVariables.project, String.valueOf(tmp + " " + e.getFirstIndex()) + " " + e.getLastIndex() + " " + lastSelectedPos, "Title");
+                    if (model.size() > 0) {
+                        BTAccount account = model.get(accountsUIList.getSelectedIndex());
+                        textField1.setText(account.getDomainName());
+                        textField2.setText(account.getLogin());
+                        passwordField1.setText(account.getPassword());
+                        for (BTProject project : account.getProjects()) {
+                            projectsModel.addElement(new SelectableItem<>(project, SelectableItem.getCheckBox(project)));
+                        }
                     }
+                    projectsList.setModel(projectsModel);
                 }
-                projectsList.setModel(projectsModel);
+                super.mouseClicked(e);
             }
         });
         accountsUIList.addMouseListener(new MouseAdapter() {
@@ -128,10 +125,8 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
             @Override
             public void actionPerformed(ActionEvent e) {
                 //   Messages.showInfoMessage(project, String.valueOf(lastSelectedPos), "Title");
-                if (lastSelectedPos != -1 && model.size() > lastSelectedPos) {
-                    model.remove(lastSelectedPos);
-                    lastSelectedPos = -1;
-                }
+                int pos = accountsUIList.getSelectedIndex();
+                if (pos != -1) model.remove(pos);
             }
         }, KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0), JComponent.WHEN_FOCUSED);
         textField1.getDocument().addDocumentListener(changeListener);
@@ -142,7 +137,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
         addButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                BTAccount account = new BTAccount(textField1.getText(), textField2.getText(), new String(passwordField1.getPassword()));
+                BTAccount account = new BTAccount(textField1.getText(), textField2.getText(), new String(passwordField1.getPassword()), BTAccountType.YOUTRACK);
                 model.addElement(account);
                 //  ActionGroup actionGroup = new DefaultActionGroup(new DumbAction2(), new DumbAction2());
                 //  DataContext context = SimpleDataContext.getProjectContext(null);
@@ -153,67 +148,38 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
         testButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                YouTrackClient client = clientFactory.getClient(textField1.getText());
-                client.login(textField2.getText(), new String(passwordField1.getPassword()));
-                BTAccount account = (BTAccount) accountsUIList.getModel().getElementAt(lastSelectedPos);
-                projectsList.setModel(projectsModel);
-                List<YouTrackProject> projects = client.getProjects();
-                List<BTProject> mustBeAdded = new ArrayList<>();
-                for (YouTrackProject project : projects) {
-                    BTProject wrapper = new BTProject(project.getProjectFullName(), project.getProjectShortName());
-                    if (!projectsModel.contains(wrapper)) {
-                        projectsModel.addElement(new SelectableItem<>(wrapper));
-                        mustBeAdded.add(wrapper);
+                int pos = accountsUIList.getSelectedIndex();
+                if (pos != -1) {
+                    YouTrackClient client = clientFactory.getClient(textField1.getText());
+                    client.login(textField2.getText(), new String(passwordField1.getPassword()));
+                    BTAccount account = (BTAccount) accountsUIList.getModel().getElementAt(pos);
+                    projectsList.setModel(projectsModel);
+                    List<YouTrackProject> projects = client.getProjects();
+                    List<BTProject> mustBeAdded = new ArrayList<>();
+                    for (YouTrackProject project : projects) {
+                        BTProject wrapper = new BTProject(project.getProjectFullName(), project.getProjectShortName());
+                        if (!projectsModel.contains(wrapper)) {
+                            projectsModel.addElement(new SelectableItem<>(wrapper));
+                            mustBeAdded.add(wrapper);
+                        }
                     }
+                    account.getProjects().addAll(mustBeAdded);
                 }
-                account.getProjects().addAll(mustBeAdded);
-
             }
         });
 
         processIssuesButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                BTAccount account = model.getElementAt(lastSelectedPos);
-                List<BTProject> projects = account.getProjects();
-                for (BTProject project : projects) {
-                    //   System.out.println(project.getShortName()+" "+project.getShortName().equals("IDEA"));
-                    if (project.isMustBeUpdated() & project.getShortName().equals("IDEA")) {
-                        YouTrackClient client = clientFactory.getClient(textField1.getText());
-                        client.login(textField2.getText(), new String(passwordField1.getPassword()));
-                        //   List<YouTrackIssue> issues = YouTrackTest.getIssuesAvoidBugged(project.getShortName(), "", 0, 1000, project.getLastUpdated(), client, null);
-                        StacktraceProvider provider = StacktraceProvider.getInstance();
-                        //  int k = 0;
-                            /*for (YouTrackIssue issue : issues) {
-                                List<ParsedException> parsedExceptions = provider.parseAllExceptions(issue.getSummary() + " " + issue.getDescription());
-                                if (parsedExceptions.size() != 0) {
-                                    BTIssue is = new BTIssue();
-                                    is.setDescription(issue.getDescription());
-                                    is.setTitle(issue.getSummary());
-                                    is.setNumber(issue.getId());
-                                    is.setExceptions(parsedExceptions);
-                                    project.getIssues().add(is);
-                                    ++k;
-                                }
-                            }*/
-                        for (String s : ExceptionTest.issues) {
-                            YouTrackIssue issue = client.getIssue(s, false);
-                            YouTrackIssue issue2 = client.getIssue(s, true);
-                            List<ParsedException> parsedExceptions = provider.parseAllExceptions(issue.getSummary() + " " + issue.getDescription());
-                            if (parsedExceptions.size() != 0) {
-                                BTIssue is = new BTIssue();
-                                for (ParsedException ex : parsedExceptions) ex.setIssue(is);
-                                is.setDescription(issue2.getDescription());
-                                is.setTitle(issue2.getSummary());
-                                is.setNumber(issue.getId());
-                                is.setExceptions(parsedExceptions);
-                                project.getIssues().add(is);
-                                issuesDAO.getIssues().add(is);
-                            }
+                int pos = accountsUIList.getSelectedIndex();
+                if (pos != -1) {
+                    saveCurrentAccount();
+                    BTAccount account = model.getElementAt(pos);
+                    List<BTProject> projects = account.getProjects();
+                    for (BTProject project : projects) {
+                        if (project.isMustBeUpdated() & project.getShortName().equals("IDEA")) {
+                            ProgressManager.getInstance().run(new YouTrackIssuesUploadStrategy(project));
                         }
-                        //Messages.showInfoMessage("Hello: " + k, "");
-                        applyAction.setEnabled(true);
-                        project.setLastUpdated(System.currentTimeMillis());
                     }
                 }
             }
@@ -255,6 +221,18 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
             accounts.add(model.get(i));
         }
         return accounts;
+    }
+
+    private void saveCurrentAccount() {
+        int pos = accountsUIList.getSelectedIndex();
+        if (pos != -1) {
+            //Messages.showInfoMessage(GlobalVariables.project, String.valueOf(lastSelectedPos), "Title");
+
+            BTAccount account = model.get(pos);
+            account.setDomainName(textField1.getText());
+            account.setLogin(textField2.getText());
+            account.setPassword(new String(passwordField1.getPassword()));
+        }
     }
 
     @NotNull
@@ -305,13 +283,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
         }
 
         public void actionPerformed(final ActionEvent e) {
-            //Messages.showInfoMessage(GlobalVariables.project, String.valueOf(lastSelectedPos), "Title");
-            if (lastSelectedPos != -1 && lastSelectedPos < model.size()) {
-                BTAccount account = model.get(lastSelectedPos);
-                account.setDomainName(textField1.getText());
-                account.setLogin(textField2.getText());
-                account.setPassword(new String(passwordField1.getPassword()));
-            }
+            saveCurrentAccount();
             accountsUIList.repaint();
             issuesDAO.saveAccounts(getAccountsFromUI());
             setEnabled(false);

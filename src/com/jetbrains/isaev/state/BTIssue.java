@@ -19,6 +19,7 @@ public class BTIssue implements Serializable {
     private String title;
     private String description;
     private String number;
+    private long lastUpdated;
     private byte[] zippedDescr;
     @JsonBackReference(value = "issues")
     private BTProject project;
@@ -39,17 +40,26 @@ public class BTIssue implements Serializable {
 
         BTIssue issue = (BTIssue) o;
 
-        if (number != null ? !number.equals(issue.number) : issue.number != null) return false;
-        if (title != null ? !title.equals(issue.title) : issue.title != null) return false;
+        if (!number.equals(issue.number)) return false;
+        if (!project.equals(issue.project)) return false;
 
         return true;
     }
 
     @Override
     public int hashCode() {
-        int result = title != null ? title.hashCode() : 0;
-        result = 31 * result + (number != null ? number.hashCode() : 0);
+        int result = number.hashCode();
+        result = 31 * result + project.hashCode();
         return result;
+    }
+
+    public long getLastUpdated() {
+
+        return lastUpdated;
+    }
+
+    public void setLastUpdated(long lastUpdated) {
+        this.lastUpdated = lastUpdated;
     }
 
     @Override
@@ -57,6 +67,7 @@ public class BTIssue implements Serializable {
         return number + ": " + shortenTitle(title);
     }
 
+    @JsonIgnore
     public String getDrawableDescription() {
         return number + ": " + title;
     }

@@ -7,8 +7,6 @@ import com.jetbrains.isaev.integration.youtrack.client.YouTrackProject;
 import com.jetbrains.isaev.issues.StacktraceProvider;
 import com.jetbrains.isaev.ui.ParsedException;
 
-import java.io.FileWriter;
-import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.List;
@@ -55,8 +53,10 @@ public class YouTrackTest {
             if (project.getProjectShortName().equals("IDEA")) proj = project;
             // out.println("full " + project.getProjectFullName() + " short " + project.getProjectShortName());
         }
+        YouTrackIssue issue = client.getIssue("IDEA-95925");
+        List<ParsedException> exceptions = StacktraceProvider.getTestInstance().parseAllTestExceptions(issue.getSummary() + " " + issue.getDescription());
         // out.println("\n\n\n");
-        List<YouTrackIssue> issues = new ArrayList<>(110000);
+       /* List<YouTrackIssue> issues = new ArrayList<>(110000);
         StacktraceProvider provider = StacktraceProvider.getInstance();
 
         //#2539;
@@ -94,16 +94,16 @@ public class YouTrackTest {
             }
             out.close();
         } while (finded > 0);
-         /*catch (Exception e) {
+         *//*catch (Exception e) {
             System.out.println("ERROR!! ERROR!! ERROR!!");
             e.printStackTrace();
-        }*/
+        }*//*
         out.println("Issues finded: " + finded);
         // YouTrackIssue issue = client.getIssue("IDEA-127736");
         //  ParsedException[] finded = provider.parseAllExceptions(issue.getSummary()+" "+issue.getDescription());
 
 
         out.println("Summary: " + counter + " items");
-        out.close();
+        out.close();*/
     }
 }

@@ -77,4 +77,13 @@ public class BTProject implements Serializable {
     public void setFullName(String fullName) {
         this.fullName = fullName;
     }
+
+    public BTAccount getBtAccount() {
+
+        return btAccount;
+    }
+
+    public void setBtAccount(BTAccount btAccount) {
+        this.btAccount = btAccount;
+    }
 }

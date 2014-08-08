@@ -28,4 +28,6 @@ public interface IssuesDAO {
     public abstract void saveAccounts(List<BTAccount> accountsFromUI);
 
     public abstract void saveState();
+
+    public abstract void saveIssues(List<BTIssue> issues);
 }

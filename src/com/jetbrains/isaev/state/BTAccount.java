@@ -3,6 +3,7 @@ package com.jetbrains.isaev.state;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -15,9 +16,13 @@ import java.util.List;
 @JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 public class BTAccount implements Serializable {
 
+    @NotNull
     private String domainName;
+    @NotNull
     private String login;
+    @NotNull
     private String password;
+    @NotNull
     private BTAccountType type;
 
     @JsonManagedReference(value = "projects")
@@ -26,42 +31,47 @@ public class BTAccount implements Serializable {
     public BTAccount() {
     }
 
-    public BTAccount(String domainName, String login, String password) {
+    public BTAccount(@NotNull String domainName, @NotNull String login, @NotNull String password, @NotNull BTAccountType type) {
 
         this.domainName = domainName;
         this.login = login;
         this.password = password;
+        this.type = type;
     }
 
+    @NotNull
     public BTAccountType getType() {
         return type;
     }
 
-    public void setType(BTAccountType type) {
+    public void setType(@NotNull BTAccountType type) {
         this.type = type;
     }
 
+    @NotNull
     public String getDomainName() {
         return domainName;
     }
 
-    public void setDomainName(String domainName) {
+    public void setDomainName(@NotNull String domainName) {
         this.domainName = domainName;
     }
 
+    @NotNull
     public String getLogin() {
         return login;
     }
 
-    public void setLogin(String login) {
+    public void setLogin(@NotNull String login) {
         this.login = login;
     }
 
+    @NotNull
     public String getPassword() {
         return password;
     }
 
-    public void setPassword(String password) {
+    public void setPassword(@NotNull String password) {
         this.password = password;
     }
 
@@ -76,7 +86,23 @@ public class BTAccount implements Serializable {
         this.projects = projects;
     }
 
-    enum BTAccountType {
-        YOUTRACK, JIRA
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        BTAccount btAccount = (BTAccount) o;
+
+        return domainName.equals(btAccount.domainName) && login.equals(btAccount.login) && password.equals(btAccount.password) && type == btAccount.type;
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = domainName.hashCode();
+        result = 31 * result + login.hashCode();
+        result = 31 * result + password.hashCode();
+        result = 31 * result + type.hashCode();
+        return result;
     }
 }
