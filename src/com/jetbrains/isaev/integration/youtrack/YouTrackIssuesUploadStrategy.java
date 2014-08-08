@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 public class YouTrackIssuesUploadStrategy extends IssuesUploadStrategy {
     private static final int ISSUES_AT_ONE_TIME = 1000;
     private static final java.lang.String YOUTRACK_DATE_FORMAT_STRING = "yyyy-MM-dd'T'hh:mm:ss";
-    private static final java.lang.String STATE = " %23Open %23%7BIn Progress%7D ";
+    private static final java.lang.String STATE = " %23Fixed %23Open %23%7BIn Progress%7D ";
     private static IssuesDAO dao = SerializableIssuesDAO.getInstance();
     private static StacktraceProvider provider = StacktraceProvider.getInstance();
     private static long to;

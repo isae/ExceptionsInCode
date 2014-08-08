@@ -28,7 +28,8 @@ public class StacktraceProvider {
      * <li>optional: colon, that must not be followed by ">any number<)" and can be followed by any string before '\n' </li>
      * </ol>
      */
-    private static final String HEADLINE_PATTERN = "[\\t\\n\\r\\s]+(([A-Za-z_$]+[\\w_$]*\\.)+([A-Za-z_$]+[\\w_$]*))\\s*(:(?![\\d]+\\))([^\\n]+))?[\\t\\n\\r\\s]";
+    // private static final String HEADLINE_PATTERN = "[\\t\\n\\r\\s]+(([A-Za-z_$]+[\\w_$]*\\.)+([A-Za-z_$]+[\\w_$]*))\\s*(:(?![\\d]+\\))([^\\n]+))?[\\t\\n\\r\\s]"; //why so slow???
+    private static final String HEADLINE_PATTERN = "(([\\w_$]+\\.)+[\\w_$]+)\\s*(:(?![\\d]+\\))([^\\n]+))?[\\t\\n\\r\\s]";
     /**
      * <ol>
      * <li>at followed by 1 ore more spaces, tabs, and new lines</li>
