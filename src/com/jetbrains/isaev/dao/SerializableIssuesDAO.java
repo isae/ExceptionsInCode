@@ -15,17 +15,16 @@ import java.util.*;
 
 /**
  * Created by Ilya.Isaev on 31.07.2014.
+ * before use need to change serializable classes
  */
-public class SerializableIssuesDAO implements IssuesDAO {
-    private static final Logger logger = Logger.getInstance(SerializableIssuesDAO.class);
+public class SerializableIssuesDAO extends IssuesDAO {
     private static final String DATABASE_PATH = GlobalVariables.project.getBaseDir().getPath() + "/exceptions_database.json";
     private static final File databaseFile = new File(DATABASE_PATH);
-    private static SerializableIssuesDAO instance;
     private ObjectMapper mapper = new ObjectMapper();
     private ProjectState state = new ProjectState();
 
 
-    private SerializableIssuesDAO() {
+    protected SerializableIssuesDAO() {
         try {
             databaseFile.createNewFile();
             state = mapper.readValue(databaseFile, state.getClass());
@@ -33,13 +32,6 @@ public class SerializableIssuesDAO implements IssuesDAO {
             logger.warn(e);
             logger.warn(DATABASE_PATH);
         }
-    }
-
-    public static IssuesDAO getInstance() {
-        if (instance == null) {
-            instance = new SerializableIssuesDAO();
-        }
-        return instance;
     }
 
     public ProjectState getState() {
@@ -85,7 +77,8 @@ public class SerializableIssuesDAO implements IssuesDAO {
     }
 
     @Override
-    public void saveAccounts(List<BTAccount> accountsFromUI) {
+    public void updateAccounts(List<BTAccount> accountsFromUI) {
+        state.getAccounts().clear();
         accountsFromUI.forEach(state.getAccounts()::add);
     }
 

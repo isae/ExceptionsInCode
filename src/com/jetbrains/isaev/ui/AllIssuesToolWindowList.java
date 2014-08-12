@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
  * Created by Ilya.Isaev on 06.08.2014.
  */
 public class AllIssuesToolWindowList extends JBList {
-    private static IssuesDAO issuesDAO = SerializableIssuesDAO.getInstance();
+    private static IssuesDAO issuesDAO = GlobalVariables.dao;
     Logger logger = Logger.getInstance(AllIssuesToolWindowList.class);
     AllIssuesToolWindowList thisList;
     private DefaultListModel<BTIssue> model = new DefaultListModel<>();

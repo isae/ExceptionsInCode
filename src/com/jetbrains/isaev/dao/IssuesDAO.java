@@ -1,5 +1,6 @@
 package com.jetbrains.isaev.dao;
 
+import com.intellij.openapi.diagnostic.Logger;
 import com.jetbrains.isaev.issues.StackTraceElement;
 import com.jetbrains.isaev.state.BTAccount;
 import com.jetbrains.isaev.state.BTIssue;
@@ -11,7 +12,30 @@ import java.util.Map;
 /**
  * Created by Ilya.Isaev on 31.07.2014.
  */
-public interface IssuesDAO {
+public abstract class IssuesDAO {
+
+    public enum StorageType {
+        SERIALIZE, PERSIST, DB
+    }
+
+    protected static final Logger logger = Logger.getInstance(IssuesDAO.class);
+    private static IssuesDAO instance;
+
+    public static IssuesDAO getInstance(StorageType type) {
+        if (instance == null) {
+            switch (type) {
+                case SERIALIZE: {
+                    instance = new SerializableIssuesDAO();
+                    break;
+                }
+                case PERSIST: {
+                    instance = new PersistentMapIssuesDAO();
+                    break;
+                }
+            }
+        }
+        return instance;
+    }
 
     public abstract List<BTIssue> getIssues();
 
@@ -25,7 +49,7 @@ public interface IssuesDAO {
 
     public abstract Map<String, List<StackTraceElement>> getFileNameToSTElement();
 
-    public abstract void saveAccounts(List<BTAccount> accountsFromUI);
+    public abstract void updateAccounts(List<BTAccount> accountsFromUI);
 
     public abstract void saveState();
 

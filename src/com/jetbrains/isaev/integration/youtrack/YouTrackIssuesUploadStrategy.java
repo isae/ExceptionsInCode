@@ -1,6 +1,7 @@
 package com.jetbrains.isaev.integration.youtrack;
 
 import com.intellij.openapi.progress.ProgressIndicator;
+import com.jetbrains.isaev.GlobalVariables;
 import com.jetbrains.isaev.dao.IssuesDAO;
 import com.jetbrains.isaev.dao.SerializableIssuesDAO;
 import com.jetbrains.isaev.integration.IssuesUploadStrategy;
@@ -8,6 +9,7 @@ import com.jetbrains.isaev.integration.youtrack.client.YouTrackClient;
 import com.jetbrains.isaev.integration.youtrack.client.YouTrackClientFactory;
 import com.jetbrains.isaev.integration.youtrack.client.YouTrackIssue;
 import com.jetbrains.isaev.issues.StacktraceProvider;
+import com.jetbrains.isaev.state.BTAccount;
 import com.jetbrains.isaev.state.BTIssue;
 import com.jetbrains.isaev.state.BTProject;
 import com.jetbrains.isaev.ui.ParsedException;
@@ -25,8 +27,9 @@ import java.util.stream.Collectors;
 public class YouTrackIssuesUploadStrategy extends IssuesUploadStrategy {
     private static final int ISSUES_AT_ONE_TIME = 1000;
     private static final java.lang.String YOUTRACK_DATE_FORMAT_STRING = "yyyy-MM-dd'T'hh:mm:ss";
-    private static final java.lang.String STATE = " %23Fixed %23Open %23%7BIn Progress%7D ";
-    private static IssuesDAO dao = SerializableIssuesDAO.getInstance();
+    //private static final java.lang.String STATE = " %23Open %23%7BIn Progress%7D ";
+    private static final java.lang.String STATE = " %23%7BIn Progress%7D ";
+    private static IssuesDAO dao = GlobalVariables.dao;
     private static StacktraceProvider provider = StacktraceProvider.getInstance();
     private static long to;
     private static long from;
@@ -34,7 +37,8 @@ public class YouTrackIssuesUploadStrategy extends IssuesUploadStrategy {
 
     public YouTrackIssuesUploadStrategy(@NotNull BTProject project) {
         super(project);
-        client = new YouTrackClientFactory().getClient(project.getBtAccount().getDomainName());
+        BTAccount acc = project.getBtAccount();
+        client = new YouTrackClientFactory().getClient(acc.getDomainName());
     }
 
     public List<YouTrackIssue> getIssuesAvoidBugged(String filter,
@@ -100,7 +104,7 @@ public class YouTrackIssuesUploadStrategy extends IssuesUploadStrategy {
             indicator.setText("There are " + parsedIssues.size() + " issues with exceptions were founded so far");
         }
         indicator.setText("Loading founded issues to database");
-        btProject.getIssues().addAll(parsedIssues);
+        //btProject.getIssues().addAll(parsedIssues);
         btProject.setLastUpdated(to);
         dao.saveIssues(parsedIssues);
         indicator.setFraction(1);

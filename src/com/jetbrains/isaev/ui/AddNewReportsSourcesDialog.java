@@ -36,7 +36,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
     private static YouTrackClientFactory clientFactory;
     private static DefaultListModel<BTAccount> model = new DefaultListModel<>();
     private static DefaultListModel<SelectableItem<BTProject>> projectsModel = new DefaultListModel<>();
-    private static IssuesDAO issuesDAO = SerializableIssuesDAO.getInstance();
+    private static IssuesDAO issuesDAO = GlobalVariables.dao;
     DocumentListener changeListener = new DocumentListener() {
         public void changedUpdate(DocumentEvent e) {
             warn();
@@ -160,6 +160,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
                         BTProject wrapper = new BTProject(project.getProjectFullName(), project.getProjectShortName());
                         if (!projectsModel.contains(wrapper)) {
                             projectsModel.addElement(new SelectableItem<>(wrapper));
+                            wrapper.setBtAccount(account);
                             mustBeAdded.add(wrapper);
                         }
                     }
@@ -259,7 +260,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
 
     private void onOK() {
 // add your code here
-        issuesDAO.saveAccounts(getAccountsFromUI());
+        issuesDAO.updateAccounts(getAccountsFromUI());
         dispose();
     }
 
@@ -285,7 +286,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
         public void actionPerformed(final ActionEvent e) {
             saveCurrentAccount();
             accountsUIList.repaint();
-            issuesDAO.saveAccounts(getAccountsFromUI());
+            issuesDAO.updateAccounts(getAccountsFromUI());
             setEnabled(false);
         }
     }

@@ -52,7 +52,7 @@ public class StacktraceProvider {
         headlinePattern = Pattern.compile(HEADLINE_PATTERN);
         tracePattern = Pattern.compile(TRACE_PATTERN);
         if (f)
-            issuesDAO = SerializableIssuesDAO.getInstance();
+            issuesDAO = GlobalVariables.dao;
     }
 
     public static StacktraceProvider getInstance() {
