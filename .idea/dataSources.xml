@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DataSourceManagerImpl" format="xml" hash="3791111680">
+    <data-source source="LOCAL" name="H2 - MyDB" uuid="44b304be-1a03-49bf-adfc-6916d1cb64b0">
+      <driver-ref>h2.embedded</driver-ref>
+      <synchronize>true</synchronize>
+      <jdbc-driver>org.h2.Driver</jdbc-driver>
+      <jdbc-url>jdbc:h2:file:$PROJECT_DIR$/../../intellij-community/.idea/BTIssuesDB</jdbc-url>
+      <user-name>user</user-name>
+      <user-password>dfdadfcbdfd9dfd9</user-password>
+      <schema-pattern>BTISSUESDB.INFORMATION_SCHEMA</schema-pattern>
+      <default-schemas>BTISSUESDB.PUBLIC</default-schemas>
+      <libraries />
+    </data-source>
+  </component>
+</project>
+

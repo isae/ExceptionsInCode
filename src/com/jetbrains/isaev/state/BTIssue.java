@@ -1,32 +1,46 @@
 package com.jetbrains.isaev.state;
 
 import com.fasterxml.jackson.annotation.*;
+import com.j256.ormlite.table.DatabaseTable;
 import com.jetbrains.isaev.dao.ZipUtils;
 import com.jetbrains.isaev.ui.ParsedException;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
+import java.sql.Timestamp;
+import java.util.*;
 
 /**
  * User: Xottab
  * Date: 18.07.2014
  */
-@JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
-@JsonIgnoreProperties({"description"})
+//@JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
+//@JsonIgnoreProperties({"description"})
 public class BTIssue implements Serializable {
     private static final int SHOWN_TITLE_LENGTH = 50;
     private String title;
     private String description;
     private String number;
-    private long lastUpdated;
+    private Timestamp lastUpdated;
     private byte[] zippedDescr;
-    @JsonBackReference(value = "issues")
+    // @JsonBackReference(value = "issues")
     private BTProject project;
-    @JsonManagedReference(value = "exceptions")
-    private List<ParsedException> exceptions = new ArrayList<>();
+    private int projectID;
+    private int issueID;
+    //  @JsonManagedReference(value = "exceptions")
+    private Map<Integer, ParsedException> exceptions = new HashMap<>();
+
+
+    public BTIssue(int issueID, String title, byte[] zippedDescr, Timestamp lastUpdated, String number, int projectID) {
+        this.title = title;
+        this.zippedDescr = zippedDescr;
+        this.lastUpdated = lastUpdated;
+        this.number = number;
+        this.projectID = projectID;
+        this.issueID = issueID;
+    }
 
     public BTIssue() {
+
     }
 
     private static String shortenTitle(String title) {
@@ -40,26 +54,43 @@ public class BTIssue implements Serializable {
 
         BTIssue issue = (BTIssue) o;
 
-        if (!number.equals(issue.number)) return false;
-        if (!project.equals(issue.project)) return false;
+        if (lastUpdated != null ? !lastUpdated.equals(issue.lastUpdated) : issue.lastUpdated != null) return false;
+        if (number != null ? !number.equals(issue.number) : issue.number != null) return false;
+        if (title != null ? !title.equals(issue.title) : issue.title != null) return false;
 
         return true;
     }
 
     @Override
     public int hashCode() {
-        int result = number.hashCode();
-        result = 31 * result + project.hashCode();
+        int result = title != null ? title.hashCode() : 0;
+        result = 31 * result + (number != null ? number.hashCode() : 0);
+        result = 31 * result + (lastUpdated != null ? lastUpdated.hashCode() : 0);
         return result;
     }
 
-    public long getLastUpdated() {
-
+    public Timestamp getLastUpdated() {
         return lastUpdated;
     }
 
-    public void setLastUpdated(long lastUpdated) {
+    public void setLastUpdated(Timestamp lastUpdated) {
         this.lastUpdated = lastUpdated;
+    }
+
+    public int getProjectID() {
+        return projectID;
+    }
+
+    public void setProjectID(int projectID) {
+        this.projectID = projectID;
+    }
+
+    public int getIssueID() {
+        return issueID;
+    }
+
+    public void setIssueID(int issueID) {
+        this.issueID = issueID;
     }
 
     @Override
@@ -115,11 +146,12 @@ public class BTIssue implements Serializable {
         this.description = description;
     }
 
-    public List<ParsedException> getExceptions() {
+    public Map<Integer, ParsedException> getExceptions() {
+        if (exceptions == null) exceptions = new HashMap<>();
         return exceptions;
     }
 
-    public void setExceptions(List<ParsedException> exceptions) {
+    public void setExceptions(Map<Integer, ParsedException> exceptions) {
         this.exceptions = exceptions;
     }
 }

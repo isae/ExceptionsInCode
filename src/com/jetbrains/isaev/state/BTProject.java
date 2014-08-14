@@ -4,34 +4,40 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import com.j256.ormlite.table.DatabaseTable;
 
 import java.io.Serializable;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Created by Ilya.Isaev on 30.07.2014.
  */
-@JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
+//@JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 public class BTProject implements Serializable {
 
     private String fullName;
     private String shortName;
 
-    @JsonBackReference(value = "projects")
+    //@JsonBackReference(value = "projects")
     private BTAccount btAccount;
 
-    @JsonManagedReference(value = "issues")
+    //@JsonManagedReference(value = "issues")
     private List<BTIssue> issues = new ArrayList<>();
-    private long lastUpdated;
+    private Timestamp lastUpdated;
     private boolean mustBeUpdated = false;
+    private int projectID;
 
     public BTProject(String projectFullName, String projectShortName) {
         this.fullName = projectFullName;
         this.shortName = projectShortName;
     }
 
-    public BTProject() {
+    public BTProject(int projectID, String shortName, String longName) {
+        this.projectID = projectID;
+        this.fullName = longName;
+        this.shortName = shortName;
     }
 
     public BTProject(String name) {
@@ -54,11 +60,12 @@ public class BTProject implements Serializable {
         this.issues = issues;
     }
 
-    public long getLastUpdated() {
+    public Timestamp getLastUpdated() {
+        if (lastUpdated == null) lastUpdated = new Timestamp(0);
         return lastUpdated;
     }
 
-    public void setLastUpdated(long lastUpdated) {
+    public void setLastUpdated(Timestamp lastUpdated) {
         this.lastUpdated = lastUpdated;
     }
 
@@ -85,5 +92,13 @@ public class BTProject implements Serializable {
 
     public void setBtAccount(BTAccount btAccount) {
         this.btAccount = btAccount;
+    }
+
+    public void setProjectID(int projectID) {
+        this.projectID = projectID;
+    }
+
+    public int getProjectID() {
+        return projectID;
     }
 }

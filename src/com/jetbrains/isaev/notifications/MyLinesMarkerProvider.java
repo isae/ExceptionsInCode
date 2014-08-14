@@ -7,8 +7,8 @@ import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.DumbAware;
 import com.intellij.openapi.project.DumbService;
 import com.intellij.psi.*;
+import com.jetbrains.isaev.GlobalVariables;
 import com.jetbrains.isaev.dao.IssuesDAO;
-import com.jetbrains.isaev.dao.SerializableIssuesDAO;
 import com.jetbrains.isaev.issues.StackTraceElement;
 import com.jetbrains.isaev.state.BTIssue;
 import com.jetbrains.isaev.ui.IconProvider;
@@ -26,7 +26,7 @@ public class MyLinesMarkerProvider extends IconLineMarkerProvider implements Dum
     private static final Logger logger = Logger.getInstance(MyLinesMarkerProvider.class);
     static Icon icon = IconProvider.getIcon(IconProvider.IconRef.WARN);
     Icon icon2 = IconProvider.getIcon(IconProvider.IconRef.YOUTRACK);
-    private IssuesDAO issuesDAO = SerializableIssuesDAO.getInstance();
+    private IssuesDAO issuesDAO = GlobalVariables.dao;
     private Map<Integer, Boolean> markersBySignature = new HashMap<>();
     private Map<String, Boolean> markersByMName = new HashMap<>();
     private PsiJavaFile currentlyOpened = null;
@@ -56,7 +56,7 @@ public class MyLinesMarkerProvider extends IconLineMarkerProvider implements Dum
 
         PsiJavaFile file = (PsiJavaFile) clazz.getContainingFile();
         String fullMethodName = file.getPackageName() + "." + clazz.getName() + "." + method.getName();
-        List<com.jetbrains.isaev.issues.StackTraceElement> elements = issuesDAO.getMethodNameToSTElement().get(fullMethodName);
+        List<com.jetbrains.isaev.issues.StackTraceElement> elements = issuesDAO.getMethodNameToSTElement(fullMethodName);
         Set<BTIssue> issueSet = new HashSet<>();
         if (elements != null) {
             for (com.jetbrains.isaev.issues.StackTraceElement element : elements)
@@ -121,12 +121,10 @@ public class MyLinesMarkerProvider extends IconLineMarkerProvider implements Dum
         Map<StackTraceElement, Boolean> toAdd = new HashMap<>();
         PsiJavaFile file = (PsiJavaFile) clazz.getContainingFile();
         String fullMethodName = file.getPackageName() + "." + clazz.getName() + "." + method.getName();
-        List<com.jetbrains.isaev.issues.StackTraceElement> elements = issuesDAO.getMethodNameToSTElement().get(fullMethodName);
-        Set<BTIssue> issueSet = new HashSet<>();
+        List<com.jetbrains.isaev.issues.StackTraceElement> elements = issuesDAO.getMethodNameToSTElement(fullMethodName);
         if (elements != null) {
             for (com.jetbrains.isaev.issues.StackTraceElement element : elements) {
                 com.jetbrains.isaev.issues.StackTraceElement prev = element.getPrev();
-                issueSet.add(element.getException().getIssue());
                 if (prev != null) {
                     List<PsiMethodCallExpression> callExpressions = getAllChildByClass(method, PsiMethodCallExpression.class);
                     int count = 0;

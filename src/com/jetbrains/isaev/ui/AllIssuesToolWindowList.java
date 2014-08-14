@@ -16,7 +16,6 @@ import com.intellij.ui.ListSpeedSearch;
 import com.intellij.ui.components.JBList;
 import com.jetbrains.isaev.GlobalVariables;
 import com.jetbrains.isaev.dao.IssuesDAO;
-import com.jetbrains.isaev.dao.SerializableIssuesDAO;
 import com.jetbrains.isaev.issues.StackTraceElement;
 import com.jetbrains.isaev.state.BTIssue;
 
@@ -43,8 +42,8 @@ public class AllIssuesToolWindowList extends JBList {
 
             //Messages.showInfoMessage(GlobalVariables.project, issue.getNumber()+" "+issue.getExceptions().size(), "Title");
             java.util.List<StackTraceElement> stElements = new ArrayList<>();
-            issue.getExceptions().stream().forEach((ex) -> {
-                stElements.addAll(ex.getStacktrace().stream().collect(Collectors.toList()));
+            issue.getExceptions().values().stream().forEach((ex) -> {
+                stElements.addAll(ex.getStacktrace().values().stream().collect(Collectors.toList()));
             });
             Map<String, Pair<PsiJavaFile, StackTraceElement>> files = new HashMap<>();
             for (StackTraceElement element : stElements) {
@@ -79,7 +78,7 @@ public class AllIssuesToolWindowList extends JBList {
     public AllIssuesToolWindowList() {
         super();
         thisList = this;
-        issuesDAO.getIssues().forEach(model::addElement);
+        issuesDAO.getAllIssuesFullState().forEach(model::addElement);
         new ListSpeedSearch(this);
         setModel(model);
         doubleListener.installOn(this);

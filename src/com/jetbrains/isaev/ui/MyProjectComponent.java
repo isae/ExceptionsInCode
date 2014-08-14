@@ -5,8 +5,6 @@ import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.jetbrains.isaev.GlobalVariables;
 import com.jetbrains.isaev.dao.IssuesDAO;
-import com.jetbrains.isaev.dao.PersistentMapIssuesDAO;
-import com.jetbrains.isaev.dao.SerializableIssuesDAO;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -20,7 +18,7 @@ public class MyProjectComponent implements ProjectComponent {
     }
 
     public void initComponent() {
-        GlobalVariables.dao = IssuesDAO.getInstance(IssuesDAO.StorageType.PERSIST);
+        GlobalVariables.dao = IssuesDAO.getInstance();
         // TODO: insert component initialization logic here
     }
 

@@ -41,8 +41,13 @@ public class DumbAction2 extends AnAction {
                 .setBlockClicksThroughBalloon(true).createBalloon();
     }
 
+    public void a(){
+
+    }
+
     @Override
     public void actionPerformed(AnActionEvent e) {
+        a();
         Project project = e.getProject();
         Editor editor = e.getData(PlatformDataKeys.EDITOR);
         String current = null;

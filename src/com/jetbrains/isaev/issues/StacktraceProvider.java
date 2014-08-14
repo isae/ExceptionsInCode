@@ -7,14 +7,13 @@ import com.intellij.psi.search.FilenameIndex;
 import com.intellij.psi.search.GlobalSearchScope;
 import com.jetbrains.isaev.GlobalVariables;
 import com.jetbrains.isaev.dao.IssuesDAO;
-import com.jetbrains.isaev.dao.SerializableIssuesDAO;
 import com.jetbrains.isaev.ui.ParsedException;
+import org.apache.velocity.runtime.directive.Parse;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * User: Xottab
@@ -87,24 +86,20 @@ public class StacktraceProvider {
     }
 
 
-    public List<ParsedException> parseAllExceptions(String text) {
+    public Map<Integer, ParsedException> parseAllExceptions(String text) {
         setHeadlineMatcher(text);
         setTraceMatcher(text);
         List<ParsedException> result = new ArrayList<>();
         List<Integer> headPositions = new ArrayList<>();
         while (headlineMatcher.find()) {
             headPositions.add(headlineMatcher.start());
-            ParsedException tmp = new ParsedException();
-            tmp.setName(headlineMatcher.group(1));
-            if (headlineMatcher.group(4) != null) {
-                tmp.setOptionalMessage(headlineMatcher.group(4));
-            }
+            ParsedException tmp = new ParsedException(headlineMatcher.group(1), headlineMatcher.group(4));
             result.add(tmp);
         }
         for (int i = 0; i < headPositions.size(); i++) {
             int next = i == headPositions.size() - 1 ? text.length() : headPositions.get(i + 1);
             Matcher m = traceMatcher.region(headPositions.get(i), next);
-            List<StackTraceElement> stackTrace = new ArrayList<>();
+            Map<Integer, StackTraceElement> stackTrace = new HashMap<>();
             String sourceFile = null;
             while (m.find()) {
                 String className = m.group(1);
@@ -129,7 +124,7 @@ public class StacktraceProvider {
                     StackTraceElement element = new StackTraceElement(className, methodName,
                             sourceFile, lineNum);
                     element.setException(result.get(i));
-                    stackTrace.add(element);
+                    stackTrace.put(element.hashCode(), element);
                     break;
                 }
             }
@@ -143,7 +138,10 @@ public class StacktraceProvider {
                 iter.remove();
             }
         }
-        return result;
+        if(result.size()>0){
+            boolean f = true;
+        }
+        return result.stream().collect(Collectors.toMap(ParsedException::hashCode, el -> el, (e1, e2) -> e1));
     }
 
     public List<ParsedException> parseAllTestExceptions(String text) {
@@ -153,11 +151,7 @@ public class StacktraceProvider {
         List<Integer> headPositions = new ArrayList<>();
         while (headlineMatcher.find()) {
             headPositions.add(headlineMatcher.start());
-            ParsedException tmp = new ParsedException();
-            tmp.setName(headlineMatcher.group(1));
-            if (headlineMatcher.group(4) != null) {
-                tmp.setOptionalMessage(headlineMatcher.group(4));
-            }
+            ParsedException tmp = new ParsedException(headlineMatcher.group(1), headlineMatcher.group(4));
             result.add(tmp);
         }
         for (int i = 0; i < headPositions.size(); i++) {
@@ -178,7 +172,7 @@ public class StacktraceProvider {
                 stackTrace.add(element);
             }
 
-            result.get(i).setStacktrace(stackTrace);
+            result.get(i).setStacktrace(null);
         }
         Iterator<ParsedException> iter = result.iterator();
         while (iter.hasNext()) {

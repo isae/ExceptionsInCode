@@ -3,7 +3,6 @@ package com.jetbrains.isaev.integration.youtrack;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.jetbrains.isaev.GlobalVariables;
 import com.jetbrains.isaev.dao.IssuesDAO;
-import com.jetbrains.isaev.dao.SerializableIssuesDAO;
 import com.jetbrains.isaev.integration.IssuesUploadStrategy;
 import com.jetbrains.isaev.integration.youtrack.client.YouTrackClient;
 import com.jetbrains.isaev.integration.youtrack.client.YouTrackClientFactory;
@@ -15,6 +14,7 @@ import com.jetbrains.isaev.state.BTProject;
 import com.jetbrains.isaev.ui.ParsedException;
 import org.jetbrains.annotations.NotNull;
 
+import java.sql.Timestamp;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -63,16 +63,18 @@ public class YouTrackIssuesUploadStrategy extends IssuesUploadStrategy {
     }
 
     BTIssue processIssue(YouTrackIssue issue, Map<String, YouTrackIssue> mappedIssues) {
-        List<ParsedException> parsedExceptions = provider.parseAllExceptions(issue.getSummary() + " " + issue.getDescription());
+        Map<Integer, ParsedException> parsedExceptions = provider.parseAllExceptions(issue.getSummary() + " " + issue.getDescription());
         if (parsedExceptions.size() != 0) {
             BTIssue is = new BTIssue();
-            for (ParsedException ex : parsedExceptions) ex.setIssue(is);
+            is.setProjectID(btProject.getProjectID());
+            for (ParsedException ex : parsedExceptions.values()) ex.setIssue(is);
             is.setDescription(mappedIssues.get(issue.getId()).getDescription());
             is.setTitle(issue.getSummary());
             is.setNumber(issue.getId());
             is.setExceptions(parsedExceptions);
+            long updated = issue.getSingleField("updated") == null ? to : Long.valueOf(issue.getSingleField("updated"));
             //todo this is wrong, last update field should be taken from youTrack, current way can slow process
-            is.setLastUpdated(to);
+            is.setLastUpdated(new Timestamp(updated));
             is.setProject(btProject);
             btProject.getIssues().add(is);
             return is;
@@ -104,9 +106,9 @@ public class YouTrackIssuesUploadStrategy extends IssuesUploadStrategy {
             indicator.setText("There are " + parsedIssues.size() + " issues with exceptions were founded so far");
         }
         indicator.setText("Loading founded issues to database");
-        //btProject.getIssues().addAll(parsedIssues);
-        btProject.setLastUpdated(to);
-        dao.saveIssues(parsedIssues);
+        btProject.setLastUpdated(new Timestamp(to));
+        dao.storeIssues(parsedIssues);
+        dao.updateProject(btProject);
         indicator.setFraction(1);
         indicator.setText("Completed updating of project " + btProject);
     }
@@ -114,7 +116,7 @@ public class YouTrackIssuesUploadStrategy extends IssuesUploadStrategy {
     private String getFilterString(long to) {
         StringBuilder builder = new StringBuilder();
         long from;
-        from = btProject.getLastUpdated();
+        from = btProject.getLastUpdated().getTime();
         DateFormat format = new SimpleDateFormat(YOUTRACK_DATE_FORMAT_STRING, new Locale("ru"));
         String dateFrom = format.format(new Date(from));
         String dateTo = format.format(new Date(to));

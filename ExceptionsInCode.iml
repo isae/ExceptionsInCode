@@ -13,6 +13,8 @@
     <orderEntry type="library" name="mail" level="project" />
     <orderEntry type="library" name="com.springsource.com.fasterxml.jackson.core.jackson-annotations-2.0.2" level="project" />
     <orderEntry type="library" name="ormlite-core-4.48" level="project" />
+    <orderEntry type="library" name="h2-1.4.181" level="project" />
+    <orderEntry type="library" name="org.springframework:spring-jdbc:4.0.6.RELEASE" level="project" />
   </component>
 </module>
 

@@ -7,7 +7,6 @@ import com.intellij.openapi.util.SystemInfo;
 import com.intellij.ui.components.JBList;
 import com.jetbrains.isaev.GlobalVariables;
 import com.jetbrains.isaev.dao.IssuesDAO;
-import com.jetbrains.isaev.dao.SerializableIssuesDAO;
 import com.jetbrains.isaev.integration.youtrack.YouTrackIssuesUploadStrategy;
 import com.jetbrains.isaev.integration.youtrack.client.YouTrackClient;
 import com.jetbrains.isaev.integration.youtrack.client.YouTrackClientFactory;
@@ -77,7 +76,8 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
         textField1.setText("http://youtrack.jetbrains.com");
         textField2.setText("Ilya.Isaev@jetbrains.com");
         passwordField1.setText(".Lu85Ga");
-        for (BTAccount acc : issuesDAO.getAccounts()) {
+        model.clear();
+        for (BTAccount acc : issuesDAO.getAccountsWithProjects()) {
             model.addElement(acc);
             for (BTProject proj : acc.getProjects())
                 for (BTIssue issue : proj.getIssues())

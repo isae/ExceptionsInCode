@@ -1,6 +1,8 @@
 package com.jetbrains.isaev.issues;
 
 import com.fasterxml.jackson.annotation.*;
+import com.j256.ormlite.table.DatabaseTable;
+import com.jetbrains.isaev.GlobalVariables;
 import com.jetbrains.isaev.ui.ParsedException;
 import org.jetbrains.annotations.NotNull;
 
@@ -9,7 +11,8 @@ import java.io.Serializable;
 /**
  * Created by Ilya.Isaev on 30.07.2014.
  */
-@JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
+//@JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
+
 public class StackTraceElement implements Serializable {
     @NotNull
     private String declaringClass;
@@ -19,12 +22,54 @@ public class StackTraceElement implements Serializable {
     //todo some files my have same name!!
     private String fileName;
     private int lineNumber;
-    @JsonManagedReference(value = "next")
+    // @JsonManagedReference(value = "next")
     private StackTraceElement next;
-    @JsonBackReference(value = "next")
+    private long prevID;
+    private long nextID;
+    //@JsonBackReference(value = "next")
     private StackTraceElement prev;
-    @JsonBackReference(value = "trace")
+    // @JsonBackReference(value = "trace")
     private ParsedException exception;
+    private long ID;
+
+    public StackTraceElement(long stElementID, String declaringClass, String methodName, String fileName, int lineNumber, long exceptionID) {
+        this(stElementID, declaringClass, methodName, fileName, lineNumber);
+        this.exceptionID = exceptionID;
+    }
+
+    public long getExceptionID() {
+        return exceptionID;
+    }
+
+    public void setExceptionID(long exceptionID) {
+        this.exceptionID = exceptionID;
+    }
+
+    private long exceptionID;
+
+    public long getPrevID() {
+        return prevID;
+    }
+
+    public void setPrevID(long prevID) {
+        this.prevID = prevID;
+    }
+
+    public long getNextID() {
+        return nextID;
+    }
+
+    public void setNextID(long nextID) {
+        this.nextID = nextID;
+    }
+
+    public long getID() {
+        return ID;
+    }
+
+    public void setID(long ID) {
+        this.ID = ID;
+    }
 
     public StackTraceElement(@NotNull String className, @NotNull String methodName, @NotNull String fileName, int lineNumber) {
         this.declaringClass = className;
@@ -33,25 +78,16 @@ public class StackTraceElement implements Serializable {
         this.lineNumber = lineNumber;
     }
 
-
-    public StackTraceElement() {
+    public StackTraceElement(@NotNull String className, @NotNull String methodName, @NotNull String fileName, int lineNumber, long exceptionID) {
+        this(className, methodName, fileName, lineNumber);
+        this.exceptionID = exceptionID;
     }
 
-    public static StackTraceElement wrap(java.lang.StackTraceElement element) {
-        return new StackTraceElement(element.getClassName(), element.getMethodName(), element.getFileName(), element.getLineNumber());
+    public StackTraceElement(long id, @NotNull String className, @NotNull String methodName, @NotNull String fileName, int lineNumber) {
+        this(className, methodName, fileName, lineNumber);
+        this.ID = id;
     }
 
-    @Override
-    public String toString() {
-        return "StackTraceElement{" +
-                "declaringClass='" + declaringClass + '\'' +
-                ", methodName='" + methodName + '\'' +
-                ", fileName='" + fileName + '\'' +
-                ", lineNumber=" + lineNumber +
-                '}';
-    }
-
-    @JsonIgnore
     public String getFullMethodName() {
         return declaringClass + "." + methodName;
     }
@@ -63,8 +99,12 @@ public class StackTraceElement implements Serializable {
 
         StackTraceElement element = (StackTraceElement) o;
 
-        return lineNumber == element.lineNumber && declaringClass.equals(element.declaringClass) && fileName.equals(element.fileName) && methodName.equals(element.methodName);
+        if (lineNumber != element.lineNumber) return false;
+        if (!declaringClass.equals(element.declaringClass)) return false;
+        if (!fileName.equals(element.fileName)) return false;
+        if (!methodName.equals(element.methodName)) return false;
 
+        return true;
     }
 
     @Override
@@ -93,6 +133,7 @@ public class StackTraceElement implements Serializable {
     }
 
     public ParsedException getException() {
+        if (exception == null) exception = GlobalVariables.dao.getException(exceptionID);
         return exception;
     }
 
