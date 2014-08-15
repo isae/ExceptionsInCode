@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="DataSourceManagerImpl" format="xml" hash="1167909626">
+  <component name="DataSourceManagerImpl" format="xml" hash="4107271471">
     <data-source source="LOCAL" name="H2 - BTIssuesDB.mv" uuid="99a26cf8-4b91-40e5-850d-f35e26180142">
       <driver-ref>h2.embedded</driver-ref>
       <synchronize>true</synchronize>

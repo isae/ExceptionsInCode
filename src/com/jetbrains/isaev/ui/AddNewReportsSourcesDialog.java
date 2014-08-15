@@ -1,10 +1,14 @@
 package com.jetbrains.isaev.ui;
 
 import com.intellij.CommonBundle;
+import com.intellij.openapi.actionSystem.AnAction;
+import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.intellij.openapi.util.SystemInfo;
 import com.intellij.ui.components.JBList;
+import com.intellij.ui.components.labels.ActionLink;
+import com.intellij.util.IconUtil;
 import com.jetbrains.isaev.GlobalVariables;
 import com.jetbrains.isaev.dao.IssuesDAO;
 import com.jetbrains.isaev.integration.youtrack.YouTrackIssuesUploadStrategy;
@@ -19,6 +23,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.*;
@@ -64,6 +69,8 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
     private JBList accountsUIList;
     private JBList projectsList;
     private JButton processIssuesButton;
+    private JLabel projectsListLabel;
+    private ActionLink actionLink1;
     private ApplyAction applyAction = new ApplyAction();
 
     public AddNewReportsSourcesDialog() {
@@ -133,18 +140,6 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
         textField2.getDocument().addDocumentListener(changeListener);
         passwordField1.getDocument().addDocumentListener(changeListener);
 
-
-        addButton.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                BTAccount account = new BTAccount(textField1.getText(), textField2.getText(), new String(passwordField1.getPassword()), BTAccountType.YOUTRACK);
-                model.addElement(account);
-                //  ActionGroup actionGroup = new DefaultActionGroup(new DumbAction2(), new DumbAction2());
-                //  DataContext context = SimpleDataContext.getProjectContext(null);
-                //  JBPopupFactory.getInstance().createActionGroupPopup("Choose system", actionGroup, context, JBPopupFactory.ActionSelectionAid.SPEEDSEARCH, true);
-            }
-        });
-
         testButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -174,7 +169,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
             public void actionPerformed(ActionEvent e) {
                 int pos = accountsUIList.getSelectedIndex();
                 if (pos != -1) {
-                    saveCurrentAccount();
+                    applyAction.actionPerformed(e);
                     BTAccount account = model.getElementAt(pos);
                     List<BTProject> projects = account.getProjects();
                     for (BTProject project : projects) {
@@ -270,6 +265,14 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
     }
 
     private void createUIComponents() {
+        actionLink1 = new ActionLink("", IconUtil.getAddIcon(), new AnAction() {
+            @Override
+            public void actionPerformed(AnActionEvent e) {
+                BTAccount account = new BTAccount(textField1.getText(), textField2.getText(), new String(passwordField1.getPassword()), BTAccountType.YOUTRACK);
+                model.addElement(account);
+            }
+        });
+        actionLink1.setBorder(new EmptyBorder(0, 0, 0, 5));
         // TODO: place custom component creation code here
     }
 

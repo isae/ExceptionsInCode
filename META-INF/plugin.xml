@@ -1,20 +1,19 @@
 <idea-plugin version="2">
     <id>com.jetbrains.isaev.issues.in.code</id>
 
-    <fullName>Exceptions in code</fullName>
+    <name>Exceptions in code</name>
     <version>1.0</version>
     <vendor email="support@yourcompany.com" url="http://www.yourcompany.com">YourCompany</vendor>
 
     <description><![CDATA[
-      Enter short description for your plugin here.<br>
-      <em>most HTML tags may be used</em>
+        Shows containing java exceptions issues from most popular bugtracking systems in the IDEA editor
     ]]></description>
 
-    <change-notes><![CDATA[
+    <!--<change-notes><![CDATA[
       Add change notes here.<br>
       <em>most HTML tags may be used</em>
     ]]>
-    </change-notes>
+    </change-notes>-->
 
     <!-- please see http://confluence.jetbrains.com/display/IDEADEV/Build+Number+Ranges for description -->
     <idea-version since-build="131"/>

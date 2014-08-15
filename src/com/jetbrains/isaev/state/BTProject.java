@@ -34,10 +34,11 @@ public class BTProject implements Serializable {
         this.shortName = projectShortName;
     }
 
-    public BTProject(int projectID, String shortName, String longName) {
+    public BTProject(int projectID, String shortName, String longName, Timestamp lastUpdated) {
         this.projectID = projectID;
         this.fullName = longName;
         this.shortName = shortName;
+        this.lastUpdated = lastUpdated;
     }
 
     public BTProject(String name) {

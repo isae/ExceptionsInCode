@@ -29,7 +29,8 @@ import java.util.*;
 public class IssuesDAO {
 
     private static final String PATH_SEPARATOR = System.getProperty("file.separator");
-    private static final String DB_NAME =  "BTIssuesDB";
+    private static final String DB_NAME = "BTIssuesDB";
+    private static final int CURRENT_DATABASE_VERSION = 1;
     private static final String STORAGE_FOLDER_PATH = GlobalVariables.project.getBasePath() + PATH_SEPARATOR + ".idea" + PATH_SEPARATOR + "BTIssuesDB";
     private static final String ACCOUNTS_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS Accounts (accountID INT  PRIMARY KEY  AUTO_INCREMENT, domainName VARCHAR(255) NOT NULL, login VARCHAR(255) NOT NULL, password VARCHAR(255) NOT NULL, type TINYINT NOT NULL, UNIQUE(domainName, login, password))";
     private static final String PROJECTS_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS Projects (projectID INT  PRIMARY KEY  AUTO_INCREMENT, accountID INT, shortName VARCHAR(255), longName VARCHAR(255), lastUpdated TIMESTAMP, FOREIGN KEY(accountID) REFERENCES Accounts(accountID),UNIQUE(accountID,shortName,longName))";
@@ -96,26 +97,40 @@ public class IssuesDAO {
         dataSource.setUrl("jdbc:h2:file:" + STORAGE_FOLDER_PATH);
         dataSource.setPassword("pass");
         db = new JdbcTemplate(dataSource);
-
-        //lets create some tables
-        db.execute(ACCOUNTS_CREATE_STATEMENT);
-        db.execute(PROJECTS_CREATE_STATEMENT);
-        db.execute(ISSUES_CREATE_STATEMENT);
-        db.execute(EXCEPTIONS_CREATE_STATEMENT);
-        db.execute(ST_ELEMENTS_CREATE_STATEMENT);
-        db.execute("SET COMPRESS_LOB DEFLATE");
+        int knownVersion = ProjectData.getDbVersion();
+        if (knownVersion == 0) {//first open
+            ProjectData.setDbVersion(CURRENT_DATABASE_VERSION);
+            //some clean-up
+            db.execute("DROP TABLE IF EXISTS Accounts");
+            db.execute("DROP TABLE IF EXISTS Projects");
+            db.execute("DROP TABLE IF EXISTS Issues");
+            db.execute("DROP TABLE IF EXISTS Exceptions");
+            db.execute("DROP TABLE IF EXISTS STElements");
+            //lets create some tables
+            db.execute(ACCOUNTS_CREATE_STATEMENT);
+            db.execute(PROJECTS_CREATE_STATEMENT);
+            db.execute(ISSUES_CREATE_STATEMENT);
+            db.execute(EXCEPTIONS_CREATE_STATEMENT);
+            db.execute(ST_ELEMENTS_CREATE_STATEMENT);
+            db.execute("SET COMPRESS_LOB DEFLATE");
+        } else {
+            if (knownVersion != CURRENT_DATABASE_VERSION) {
+                startMigrationToAnotherVersion(knownVersion);
+            }
+        }
         issues = new CachedArrayList<>();
         accounts = new CachedHashSet<>();
+    }
+
+    private void startMigrationToAnotherVersion(int oldVersion) {
+        //there are one version currently
     }
 
     private CachedArrayList<BTIssue> issues;
     private CachedHashSet<BTAccount> accounts;
 
     public List<BTIssue> getAllIssuesFullState() {
-        //  if (issues.stateChanged) {
-        //   issues.clear();
         Map<Integer, BTIssue> btIssues = new HashMap<>();//new TreeSet<>((i1, i2) -> i1.getIssueID() < i2.getIssueID() ? -1 : 1);
-        // Map<Integer, ParsedException> exceptions = new HashMap<>();//new TreeSet<>((i1, i2) -> i1.getIssueID() < i2.getIssueID() ? -1 : 1);
         List<BTIssue> result = db.query("SELECT * FROM STElements JOIN Exceptions ON STElements.exceptionID = Exceptions.exceptionID JOIN Issues ON Exceptions.issueID = Issues.issueID", (Object[]) null, (rs, i) -> {
             BTIssue issue = new BTIssue(rs.getInt("issueID"), rs.getString("title"), getStringFromClob(rs.getClob("description")), rs.getTimestamp("lastUpdated"), rs.getString("number"), rs.getInt("projectID"));
             if (!btIssues.containsKey(issue.hashCode())) btIssues.put(issue.hashCode(), issue);
@@ -127,7 +142,7 @@ public class IssuesDAO {
             StackTraceElement element = new StackTraceElement(rs.getLong("stElementID"), rs.getString("declaringClass"), rs.getString("methodName"), rs.getString("fileName"), rs.getInt("lineNumber"), rs.getLong("exceptionID"));
             if (!exception.getStacktrace().containsKey(element.hashCode()))
                 exception.getStacktrace().put(element.hashCode(), element);
-            return null;//new BTIssue(rs.getInt("issueID"), rs.getString("title"), rs.getBytes("description"), rs.getTimestamp("lastUpdated"), rs.getString("number"), rs.getInt("projectID"));
+            return null;
         });
 
 
@@ -136,24 +151,18 @@ public class IssuesDAO {
                 ex.orderStacktrace();
             });
         });
-        // }
         return new ArrayList<>(btIssues.values());
-        //return issues;
     }
 
     public List<BTIssue> getAllIssues() {
-        //  if (issues.stateChanged) {
-        //   issues.clear();
         List<BTIssue> result = db.query("SELECT * FROM Issues", (Object[]) null, (rs, i) -> {
             return new BTIssue(rs.getInt("issueID"), rs.getString("title"), getStringFromClob(rs.getClob("description")), rs.getTimestamp("lastUpdated"), rs.getString("number"), rs.getInt("projectID"));
         });
-        // }
         return result;
-        //return issues;
     }
 
     public List<BTProject> getProjects() {
-        return db.query("SELECT * FROM Projects", (Object[]) null, (rs, i) -> new BTProject(rs.getInt("projectID"), rs.getString("shortName"), rs.getString("longName")));
+        return db.query("SELECT * FROM Projects", (Object[]) null, (rs, i) -> new BTProject(rs.getInt("projectID"), rs.getString("shortName"), rs.getString("longName"), rs.getTimestamp("lastUpdated")));
     }
 
     private String getStringFromClob(Clob clob) throws SQLException {
@@ -163,7 +172,6 @@ public class IssuesDAO {
     }
 
     public Set<BTAccount> getAccountsWithProjects() {
-        //  if (accounts.stateChanged) {
         accounts.clear();
         Map<Integer, BTAccount> tmp = new HashMap<>();
         Map<Integer, List<BTProject>> tmp2 = new HashMap<>();
@@ -173,19 +181,15 @@ public class IssuesDAO {
                 tmp.put(acc.getAccountID(), acc);
                 tmp2.put(acc.getAccountID(), new ArrayList<>());
             }
-            BTProject project = new BTProject(rs.getInt("projectID"), rs.getString("shortName"), rs.getString("longName"));
+            BTProject project = new BTProject(rs.getInt("projectID"), rs.getString("shortName"), rs.getString("longName"), rs.getTimestamp("lastUpdated"));
             project.setBtAccount(tmp.get(acc.getAccountID()));
             project.setMustBeUpdated(true);
             tmp2.get(acc.getAccountID()).add(project);
             return acc;
         });
         if (tmp.size() == 0) return getOnlyAccounts();
-        //.forEach(e -> accounts.add(e));
-        //  accounts.stateChanged = false;
-        // }
         tmp.values().forEach(acc -> acc.setProjects(tmp2.get(acc.getAccountID())));
         return new HashSet<>(tmp.values());
-        //return accounts;
     }
 
     private Set<BTAccount> getOnlyAccounts() {
@@ -292,11 +296,9 @@ public class IssuesDAO {
                 return statement;
             }, holder);
             e.setExceptionID(holder.getKey().longValue());
-            // List<ParsedException> result = db.query("SELECT * FROM Exceptions", (Object[]) null, (rs, i) -> new ParsedException(rs.getInt("issueID"), rs.getString("name"), rs.getLong("exceptionID"), rs.getString("message")));
             StackTraceElement[] elements = e.getStacktrace().values().stream().toArray(StackTraceElement[]::new);
             for (StackTraceElement el : elements) {
                 el.setExceptionID(e.getExceptionID());
-                //  db.update("INSERT INTO STElements (exceptionID,declaringClass,methodName,fileName, lineNumber) values (?,?,?,?,?)", e.getExceptionID(), el.getDeclaringClass(), el.getFullMethodName(), el.getFileName(), el.getLineNumber());
                 KeyHolder hold = new GeneratedKeyHolder();
                 db.update(con -> {
                     PreparedStatement statement = con.prepareStatement("INSERT INTO STElements (exceptionID,declaringClass,methodName,fileName, lineNumber) values (?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
