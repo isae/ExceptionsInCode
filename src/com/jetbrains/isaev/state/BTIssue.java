@@ -13,28 +13,23 @@ import java.util.*;
  * User: Xottab
  * Date: 18.07.2014
  */
-//@JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
-//@JsonIgnoreProperties({"description"})
 public class BTIssue implements Serializable {
     private static final int SHOWN_TITLE_LENGTH = 50;
     private String title;
     private String description;
     private String number;
     private Timestamp lastUpdated;
-    private byte[] zippedDescr;
-    // @JsonBackReference(value = "issues")
     private BTProject project;
     private int projectID;
     private int issueID;
-    //  @JsonManagedReference(value = "exceptions")
     private Map<Integer, ParsedException> exceptions = new HashMap<>();
 
 
-    public BTIssue(int issueID, String title, byte[] zippedDescr, Timestamp lastUpdated, String number, int projectID) {
+    public BTIssue(int issueID, String title, String descr , Timestamp lastUpdated, String number, int projectID) {
         this.title = title;
-        this.zippedDescr = zippedDescr;
         this.lastUpdated = lastUpdated;
         this.number = number;
+        this.description = descr;
         this.projectID = projectID;
         this.issueID = issueID;
     }
@@ -119,14 +114,14 @@ public class BTIssue implements Serializable {
         this.project = project;
     }
 
-    public byte[] getZippedDescr() {
+   /* public byte[] getZippedDescr() {
 
         return zippedDescr;
     }
 
     public void setZippedDescr(byte[] zippedDescr) {
         this.zippedDescr = zippedDescr;
-    }
+    }*/
 
     public String getTitle() {
         return title;
@@ -137,12 +132,12 @@ public class BTIssue implements Serializable {
     }
 
     public String getDescription() {
-        if (description == null) description = ZipUtils.decompress(zippedDescr);
+     //   if (description == null) description = ZipUtils.decompress(zippedDescr);
         return description;
     }
 
     public void setDescription(String description) {
-        this.zippedDescr = ZipUtils.compress(description);
+    //    this.zippedDescr = ZipUtils.compress(description);
         this.description = description;
     }
 

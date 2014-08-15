@@ -67,6 +67,7 @@ public class ParsedException implements Serializable {
 
     @NotNull
     public String getOptionalMessage() {
+
         return optionalMessage;
     }
 

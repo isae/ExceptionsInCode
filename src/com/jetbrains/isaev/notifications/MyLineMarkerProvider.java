@@ -24,7 +24,6 @@ import java.util.stream.Collectors;
 public class MyLineMarkerProvider extends IconLineMarkerProvider implements DumbAware {
     private static final Logger logger = Logger.getInstance(MyLineMarkerProvider.class);
     private IssuesDAO dao = GlobalVariables.dao;
-    private PsiClass currentClass = null;
 
     private static PsiElement getCorrectPsiAnchor(PsiMethod method) {
         PsiElement range;
@@ -41,23 +40,6 @@ public class MyLineMarkerProvider extends IconLineMarkerProvider implements Dumb
         if (range == null) range = method;
         return range;
     }
-
-   /* private LineMarkerInfo getLineMarkerInfo(@NotNull PsiMethod method) {
-        PsiClass clazz = method.getContainingClass();
-
-        PsiJavaFile file = (PsiJavaFile) clazz.getContainingFile();
-        String fullMethodName = file.getPackageName() + "." + clazz.getName() + "." + method.getName();
-        List<com.jetbrains.isaev.issues.StackTraceElement> elements = dao.getMethodNameToSTElement(fullMethodName);
-        Set<BTIssue> issueSet = new HashSet<>();
-        if (elements != null) {
-            for (com.jetbrains.isaev.issues.StackTraceElement element : elements)
-                issueSet.add(element.getException().getIssue());
-            PsiElement range = getCorrectPsiAnchor(method);
-
-            return new ReportedExceptionLineMarkerInfo(range, issueSet);
-        }
-        return null;
-    }*/
 
     private <T extends PsiElement> List<T> getAllChildByClass(PsiElement element, Class<T> typeToken) {
         List<T> list = new LinkedList<>();
@@ -119,7 +101,6 @@ public class MyLineMarkerProvider extends IconLineMarkerProvider implements Dumb
     }
 
     private void addMethodMarkers(PsiMethod method, Collection<LineMarkerInfo> result) {
-        //  if (!mustBeUpdated.containsKey(method.getName())) {
         PsiClass clazz = method.getContainingClass();
         Map<PsiElement, HashSet<BTIssue>> tempResult = new HashMap<>();
         Map<StackTraceElement, Boolean> toAdd = new HashMap<>();
@@ -134,11 +115,9 @@ public class MyLineMarkerProvider extends IconLineMarkerProvider implements Dumb
                     List<PsiMethodCallExpression> callExpressions = getAllChildByClass(method, PsiMethodCallExpression.class);
                     int count = 0;
                     PsiMethodCallExpression anchor = null;
-                    String s2 = prev.getMethodName();
-                    String s3 = element.getMethodName();
+                    String s2 = prev.getDeclaringClass() + "." + prev.getMethodName();
                     for (PsiMethodCallExpression expr : callExpressions) {
-                        //todo check not only method name but package and class name  too
-                        String s1 = expr.getMethodExpression().getReferenceName();
+                        String s1 = className + "." + expr.getMethodExpression().getReferenceName();
                         if (s1.equals(s2)) {
                             count++;
                             anchor = expr;
@@ -163,8 +142,6 @@ public class MyLineMarkerProvider extends IconLineMarkerProvider implements Dumb
                 result.add(new ReportedExceptionLineMarkerInfo(entry.getKey(), entry.getValue()));
             }
         }
-        // mustBeUpdated.put(method.getName(), method);
-        //    }
     }
 
 }

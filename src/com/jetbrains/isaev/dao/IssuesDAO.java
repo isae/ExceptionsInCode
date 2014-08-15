@@ -15,6 +15,11 @@ import org.springframework.jdbc.datasource.SimpleDriverDataSource;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 
+import javax.sql.rowset.serial.SerialClob;
+import java.io.BufferedReader;
+import java.io.Reader;
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.sql.*;
 import java.util.*;
 
@@ -24,11 +29,12 @@ import java.util.*;
 public class IssuesDAO {
 
     private static final String PATH_SEPARATOR = System.getProperty("file.separator");
+    private static final String DB_NAME =  "BTIssuesDB";
     private static final String STORAGE_FOLDER_PATH = GlobalVariables.project.getBasePath() + PATH_SEPARATOR + ".idea" + PATH_SEPARATOR + "BTIssuesDB";
     private static final String ACCOUNTS_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS Accounts (accountID INT  PRIMARY KEY  AUTO_INCREMENT, domainName VARCHAR(255) NOT NULL, login VARCHAR(255) NOT NULL, password VARCHAR(255) NOT NULL, type TINYINT NOT NULL, UNIQUE(domainName, login, password))";
     private static final String PROJECTS_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS Projects (projectID INT  PRIMARY KEY  AUTO_INCREMENT, accountID INT, shortName VARCHAR(255), longName VARCHAR(255), lastUpdated TIMESTAMP, FOREIGN KEY(accountID) REFERENCES Accounts(accountID),UNIQUE(accountID,shortName,longName))";
-    private static final String ISSUES_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS Issues (issueID INT  PRIMARY KEY  AUTO_INCREMENT, projectID INT, title VARCHAR(1023), description BINARY(16383), number VARCHAR(63), lastUpdated TIMESTAMP, FOREIGN KEY(projectID) REFERENCES Projects(projectID))";
-    private static final String EXCEPTIONS_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS Exceptions (exceptionID IDENTITY, issueID INT, name VARCHAR(255), message VARCHAR(255), FOREIGN KEY(issueID) REFERENCES Issues(issueID))";
+    private static final String ISSUES_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS Issues (issueID INT  PRIMARY KEY  AUTO_INCREMENT, projectID INT, title VARCHAR(1023), description CLOB, number VARCHAR(63), lastUpdated TIMESTAMP, FOREIGN KEY(projectID) REFERENCES Projects(projectID))";
+    private static final String EXCEPTIONS_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS Exceptions (exceptionID IDENTITY, issueID INT, name VARCHAR(255), message CLOB, FOREIGN KEY(issueID) REFERENCES Issues(issueID))";
     private static final String ST_ELEMENTS_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS STElements (stElementID IDENTITY, exceptionID BIGINT, declaringClass VARCHAR(255), methodName VARCHAR(255), fileName VARCHAR(255), lineNumber INT, prev BIGINT, next BIGINT, FOREIGN KEY(exceptionID) REFERENCES Exceptions(exceptionID))";
     protected static final Logger logger = Logger.getInstance(IssuesDAO.class);
     private static IssuesDAO instance;
@@ -45,7 +51,7 @@ public class IssuesDAO {
     public ParsedException getException(long exceptionID) {
         return db.query("SELECT * FROM Exceptions WHERE exceptionID = ?", new Object[]{exceptionID}, (ResultSet rs) -> {
             if (rs.next()) {
-                return new ParsedException(rs.getInt("issueID"), rs.getString("name"), rs.getLong("exceptionID"), rs.getString("message"));
+                return new ParsedException(rs.getInt("issueID"), rs.getString("name"), rs.getLong("exceptionID"), getStringFromClob(rs.getClob("message")));
             }
             return null;
         });
@@ -55,7 +61,7 @@ public class IssuesDAO {
         BTIssue issue = db.query("SELECT * FROM Issues WHERE issueID = ?", new Object[]{issueID}, (ResultSet rs) -> {
             boolean f = true;
             if (rs.next()) {
-                BTIssue issue1 = new BTIssue(rs.getInt("issueID"), rs.getString("title"), rs.getBytes("description"), rs.getTimestamp("lastUpdated"), rs.getString("number"), rs.getInt("projectID"));
+                BTIssue issue1 = new BTIssue(rs.getInt("issueID"), rs.getString("title"), getStringFromClob(rs.getClob("description")), rs.getTimestamp("lastUpdated"), rs.getString("number"), rs.getInt("projectID"));
                 return issue1;
             } else {
                 return null;
@@ -87,7 +93,7 @@ public class IssuesDAO {
         SimpleDriverDataSource dataSource = new SimpleDriverDataSource();
         dataSource.setDriverClass(org.h2.Driver.class);
         dataSource.setUsername("user");
-        dataSource.setUrl("jdbc:h2:" + STORAGE_FOLDER_PATH);
+        dataSource.setUrl("jdbc:h2:file:" + STORAGE_FOLDER_PATH);
         dataSource.setPassword("pass");
         db = new JdbcTemplate(dataSource);
 
@@ -97,6 +103,7 @@ public class IssuesDAO {
         db.execute(ISSUES_CREATE_STATEMENT);
         db.execute(EXCEPTIONS_CREATE_STATEMENT);
         db.execute(ST_ELEMENTS_CREATE_STATEMENT);
+        db.execute("SET COMPRESS_LOB DEFLATE");
         issues = new CachedArrayList<>();
         accounts = new CachedHashSet<>();
     }
@@ -110,10 +117,10 @@ public class IssuesDAO {
         Map<Integer, BTIssue> btIssues = new HashMap<>();//new TreeSet<>((i1, i2) -> i1.getIssueID() < i2.getIssueID() ? -1 : 1);
         // Map<Integer, ParsedException> exceptions = new HashMap<>();//new TreeSet<>((i1, i2) -> i1.getIssueID() < i2.getIssueID() ? -1 : 1);
         List<BTIssue> result = db.query("SELECT * FROM STElements JOIN Exceptions ON STElements.exceptionID = Exceptions.exceptionID JOIN Issues ON Exceptions.issueID = Issues.issueID", (Object[]) null, (rs, i) -> {
-            BTIssue issue = new BTIssue(rs.getInt("issueID"), rs.getString("title"), rs.getBytes("description"), rs.getTimestamp("lastUpdated"), rs.getString("number"), rs.getInt("projectID"));
+            BTIssue issue = new BTIssue(rs.getInt("issueID"), rs.getString("title"), getStringFromClob(rs.getClob("description")), rs.getTimestamp("lastUpdated"), rs.getString("number"), rs.getInt("projectID"));
             if (!btIssues.containsKey(issue.hashCode())) btIssues.put(issue.hashCode(), issue);
             issue = btIssues.get(issue.hashCode());
-            ParsedException exception = new ParsedException(rs.getInt("issueID"), rs.getString("name"), rs.getLong("exceptionID"), rs.getString("message"));
+            ParsedException exception = new ParsedException(rs.getInt("issueID"), rs.getString("name"), rs.getLong("exceptionID"), getStringFromClob(rs.getClob("message")));
             if (!issue.getExceptions().containsKey(exception.hashCode()))
                 issue.getExceptions().put(exception.hashCode(), exception);
             exception = issue.getExceptions().get(exception.hashCode());
@@ -138,7 +145,7 @@ public class IssuesDAO {
         //  if (issues.stateChanged) {
         //   issues.clear();
         List<BTIssue> result = db.query("SELECT * FROM Issues", (Object[]) null, (rs, i) -> {
-            return new BTIssue(rs.getInt("issueID"), rs.getString("title"), rs.getBytes("description"), rs.getTimestamp("lastUpdated"), rs.getString("number"), rs.getInt("projectID"));
+            return new BTIssue(rs.getInt("issueID"), rs.getString("title"), getStringFromClob(rs.getClob("description")), rs.getTimestamp("lastUpdated"), rs.getString("number"), rs.getInt("projectID"));
         });
         // }
         return result;
@@ -147,6 +154,12 @@ public class IssuesDAO {
 
     public List<BTProject> getProjects() {
         return db.query("SELECT * FROM Projects", (Object[]) null, (rs, i) -> new BTProject(rs.getInt("projectID"), rs.getString("shortName"), rs.getString("longName")));
+    }
+
+    private String getStringFromClob(Clob clob) throws SQLException {
+        java.util.Scanner s = new java.util.Scanner(clob.getCharacterStream()).useDelimiter("\\A");
+        String result = s.hasNext() ? s.next() : "";
+        return result;
     }
 
     public Set<BTAccount> getAccountsWithProjects() {
@@ -247,7 +260,8 @@ public class IssuesDAO {
 
     public void storeIssues(List<BTIssue> issues) {
         issues.forEach(e -> {
-            db.update("INSERT INTO Issues (projectID,title,description,number,lastUpdated) values (?,?,?,?,?)", e.getProjectID(), e.getTitle(), e.getZippedDescr(), e.getNumber(), e.getLastUpdated());
+
+            db.update("INSERT INTO Issues (projectID,title,description,number,lastUpdated) values (?,?,?,?,?)", e.getProjectID(), e.getTitle(), getClobFromString(e.getDescription()), e.getNumber(), e.getLastUpdated());
             e.setIssueID(db.query("SELECT issueID FROM Issues WHERE (projectID = ? AND number = ?)", new Object[]{e.getProjectID(), e.getNumber()}, (ResultSet rs) -> {
                 rs.next();
                 return rs.getInt("issueID");
@@ -258,6 +272,15 @@ public class IssuesDAO {
         // dbChanged = true;
     }
 
+    private Clob getClobFromString(String description) {
+        Clob tmp = null;
+        try {
+            tmp = new SerialClob(description.toCharArray());
+        } catch (SQLException ignored) {
+        }
+        return tmp;
+    }
+
     private void storeExceptions(int issueID, Map<Integer, ParsedException> exceptions) {
         exceptions.values().forEach(e -> {
             KeyHolder holder = new GeneratedKeyHolder();
@@ -265,7 +288,7 @@ public class IssuesDAO {
                 PreparedStatement statement = con.prepareStatement("INSERT INTO Exceptions (issueID,name,message) VALUES (?,?,?)", Statement.RETURN_GENERATED_KEYS);
                 statement.setInt(1, issueID);
                 statement.setString(2, e.getName());
-                statement.setString(3, e.getOptionalMessage());
+                statement.setClob(3, getClobFromString(e.getOptionalMessage()));
                 return statement;
             }, holder);
             e.setExceptionID(holder.getKey().longValue());
