@@ -31,7 +31,7 @@
                     factoryClass="com.jetbrains.isaev.ui.ShowAllIssuesToolWindowFactory"/>
 
         <codeInsight.lineMarkerProvider language="JAVA"
-                                        implementationClass="com.jetbrains.isaev.notifications.MyLinesMarkerProvider"/>
+                                        implementationClass="com.jetbrains.isaev.notifications.MyLineMarkerProvider"/>
         <documentationProvider
                 implementation="com.jetbrains.isaev.notifications.IssueDescriptionDocumentationProvider"/>
     </extensions>

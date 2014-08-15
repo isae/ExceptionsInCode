@@ -11,29 +11,20 @@ import com.jetbrains.isaev.GlobalVariables;
 import com.jetbrains.isaev.dao.IssuesDAO;
 import com.jetbrains.isaev.issues.StackTraceElement;
 import com.jetbrains.isaev.state.BTIssue;
-import com.jetbrains.isaev.ui.IconProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import javax.swing.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * User: Xottab
  * Date: 21.07.2014
  */
-public class MyLinesMarkerProvider extends IconLineMarkerProvider implements DumbAware {
-    private static final Logger logger = Logger.getInstance(MyLinesMarkerProvider.class);
-    static Icon icon = IconProvider.getIcon(IconProvider.IconRef.WARN);
-    Icon icon2 = IconProvider.getIcon(IconProvider.IconRef.YOUTRACK);
-    private IssuesDAO issuesDAO = GlobalVariables.dao;
-    private Map<Integer, Boolean> markersBySignature = new HashMap<>();
-    private Map<String, Boolean> markersByMName = new HashMap<>();
-    private PsiJavaFile currentlyOpened = null;
-
-    private static int methodHash(@NotNull PsiMethod m) {
-        return m.getSignature(PsiSubstitutor.EMPTY).hashCode();
-    }
+public class MyLineMarkerProvider extends IconLineMarkerProvider implements DumbAware {
+    private static final Logger logger = Logger.getInstance(MyLineMarkerProvider.class);
+    private IssuesDAO dao = GlobalVariables.dao;
+    private PsiClass currentClass = null;
 
     private static PsiElement getCorrectPsiAnchor(PsiMethod method) {
         PsiElement range;
@@ -51,12 +42,12 @@ public class MyLinesMarkerProvider extends IconLineMarkerProvider implements Dum
         return range;
     }
 
-    private LineMarkerInfo getLineMarkerInfo(@NotNull PsiMethod method) {
+   /* private LineMarkerInfo getLineMarkerInfo(@NotNull PsiMethod method) {
         PsiClass clazz = method.getContainingClass();
 
         PsiJavaFile file = (PsiJavaFile) clazz.getContainingFile();
         String fullMethodName = file.getPackageName() + "." + clazz.getName() + "." + method.getName();
-        List<com.jetbrains.isaev.issues.StackTraceElement> elements = issuesDAO.getMethodNameToSTElement(fullMethodName);
+        List<com.jetbrains.isaev.issues.StackTraceElement> elements = dao.getMethodNameToSTElement(fullMethodName);
         Set<BTIssue> issueSet = new HashSet<>();
         if (elements != null) {
             for (com.jetbrains.isaev.issues.StackTraceElement element : elements)
@@ -66,7 +57,7 @@ public class MyLinesMarkerProvider extends IconLineMarkerProvider implements Dum
             return new ReportedExceptionLineMarkerInfo(range, issueSet);
         }
         return null;
-    }
+    }*/
 
     private <T extends PsiElement> List<T> getAllChildByClass(PsiElement element, Class<T> typeToken) {
         List<T> list = new LinkedList<>();
@@ -95,16 +86,29 @@ public class MyLinesMarkerProvider extends IconLineMarkerProvider implements Dum
         }
 
         Set<PsiMethod> methods = new HashSet<>();
+        PsiClass currentClass = null;
         for (PsiElement element : elements) {
             if (element instanceof PsiMethod) methods.add((PsiMethod) element);
+            if (element instanceof PsiClass) currentClass = (PsiClass) element;
+        }
+        if (currentClass != null) {
+            String currentClassName = currentClass.getQualifiedName();
+            List<StackTraceElement> elementList = dao.getClassNameToSTElement(currentClassName);
+            Set<BTIssue> issues = elementList.stream().map(e -> e.getException().getIssue()).collect(Collectors.toSet());
+            if (!issues.isEmpty()) {
+                LineMarkerInfo tmp = new ReportedExceptionLineMarkerInfo(currentClass, issues);
+                result.add(tmp);
+            }
+            //logger.warn("Class name is: " + currentClassName);
         }
         if (!methods.isEmpty()) markMethods(methods, result);
     }
 
     private void markMethods(Set<PsiMethod> methods, Collection<LineMarkerInfo> result) {
         Map<String, PsiMethod> mustBeUpdated = new HashMap<>();
+        Map<Long, StackTraceElement> res = new HashMap<>();
         for (PsiMethod method : methods) {
-            addMethodMarkers(method, result, mustBeUpdated);
+            addMethodMarkers(method, result);
             //  LineMarkerInfo info = getLineMarkerInfo(method);
             //if (info != null) result.add(info);
         }
@@ -114,14 +118,15 @@ public class MyLinesMarkerProvider extends IconLineMarkerProvider implements Dum
         if (!target.containsKey(toCheck)) target.put(toCheck, new HashSet<>());
     }
 
-    private void addMethodMarkers(PsiMethod method, Collection<LineMarkerInfo> result, Map<String, PsiMethod> mustBeUpdated) {
+    private void addMethodMarkers(PsiMethod method, Collection<LineMarkerInfo> result) {
         //  if (!mustBeUpdated.containsKey(method.getName())) {
         PsiClass clazz = method.getContainingClass();
         Map<PsiElement, HashSet<BTIssue>> tempResult = new HashMap<>();
         Map<StackTraceElement, Boolean> toAdd = new HashMap<>();
         PsiJavaFile file = (PsiJavaFile) clazz.getContainingFile();
-        String fullMethodName = file.getPackageName() + "." + clazz.getName() + "." + method.getName();
-        List<com.jetbrains.isaev.issues.StackTraceElement> elements = issuesDAO.getMethodNameToSTElement(fullMethodName);
+        String className = file.getPackageName() + "." + clazz.getName();
+        String methodName = method.getName();
+        List<com.jetbrains.isaev.issues.StackTraceElement> elements = dao.getMethodNameToSTElement(className, methodName);
         if (elements != null) {
             for (com.jetbrains.isaev.issues.StackTraceElement element : elements) {
                 com.jetbrains.isaev.issues.StackTraceElement prev = element.getPrev();

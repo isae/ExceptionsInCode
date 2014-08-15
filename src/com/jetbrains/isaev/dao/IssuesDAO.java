@@ -117,7 +117,7 @@ public class IssuesDAO {
             if (!issue.getExceptions().containsKey(exception.hashCode()))
                 issue.getExceptions().put(exception.hashCode(), exception);
             exception = issue.getExceptions().get(exception.hashCode());
-            StackTraceElement element = new StackTraceElement(rs.getLong("stElementID"), rs.getString("declaringClass"), rs.getString("methodName"), rs.getString("fileName"), rs.getInt("lineNumber"),rs.getLong("exceptionID"));
+            StackTraceElement element = new StackTraceElement(rs.getLong("stElementID"), rs.getString("declaringClass"), rs.getString("methodName"), rs.getString("fileName"), rs.getInt("lineNumber"), rs.getLong("exceptionID"));
             if (!exception.getStacktrace().containsKey(element.hashCode()))
                 exception.getStacktrace().put(element.hashCode(), element);
             return null;//new BTIssue(rs.getInt("issueID"), rs.getString("title"), rs.getBytes("description"), rs.getTimestamp("lastUpdated"), rs.getString("number"), rs.getInt("projectID"));
@@ -185,15 +185,15 @@ public class IssuesDAO {
         return accounts;
     }
 
-    public List<StackTraceElement> getMethodNameToSTElement(String methodName) {
-        List<StackTraceElement> result = db.query("SELECT * FROM STElements WHERE methodName = ?", (new Object[]{methodName}), (rs, i) -> {
+    public List<StackTraceElement> getMethodNameToSTElement(String className, String methodName) {
+        List<StackTraceElement> result = db.query("SELECT * FROM STElements WHERE declaringClass = ? AND methodName = ?", (new Object[]{className, methodName}), (rs, i) -> {
             return new StackTraceElement(rs.getLong("stElementID"), rs.getString("declaringClass"), rs.getString("methodName"), rs.getString("fileName"), rs.getInt("lineNumber"), rs.getLong("exceptionID"));
         });
         return result;
     }
 
     public List<StackTraceElement> getClassNameToSTElement(String className) {
-        return db.query("SELECT * FROM STElements WHERE className = ?", (new Object[]{className}), (rs, i) -> {
+        return db.query("SELECT * FROM STElements WHERE declaringClass = ?", (new Object[]{className}), (rs, i) -> {
             return new StackTraceElement(rs.getLong("stElementID"), rs.getString("declaringClass"), rs.getString("methodName"), rs.getString("fileName"), rs.getInt("lineNumber"), rs.getLong("exceptionID"));
         });
     }
@@ -269,7 +269,7 @@ public class IssuesDAO {
                 return statement;
             }, holder);
             e.setExceptionID(holder.getKey().longValue());
-            List<ParsedException> result = db.query("SELECT * FROM Exceptions", (Object[]) null, (rs, i) -> new ParsedException(rs.getInt("issueID"), rs.getString("name"), rs.getInt("exceptionID"), rs.getString("message")));
+            // List<ParsedException> result = db.query("SELECT * FROM Exceptions", (Object[]) null, (rs, i) -> new ParsedException(rs.getInt("issueID"), rs.getString("name"), rs.getLong("exceptionID"), rs.getString("message")));
             StackTraceElement[] elements = e.getStacktrace().values().stream().toArray(StackTraceElement[]::new);
             for (StackTraceElement el : elements) {
                 el.setExceptionID(e.getExceptionID());
@@ -279,7 +279,7 @@ public class IssuesDAO {
                     PreparedStatement statement = con.prepareStatement("INSERT INTO STElements (exceptionID,declaringClass,methodName,fileName, lineNumber) values (?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
                     statement.setLong(1, el.getExceptionID());
                     statement.setString(2, el.getDeclaringClass());
-                    statement.setString(3, el.getFullMethodName());
+                    statement.setString(3, el.getMethodName());
                     statement.setString(4, el.getFileName());
                     statement.setInt(5, el.getLineNumber());
                     return statement;

@@ -121,6 +121,7 @@ public class StacktraceProvider {
                         break;
                     }
                 if (f) {
+                    className = removeAnonimousMarks(className);
                     StackTraceElement element = new StackTraceElement(className, methodName,
                             sourceFile, lineNum);
                     element.setException(result.get(i));
@@ -138,17 +139,22 @@ public class StacktraceProvider {
                 iter.remove();
             }
         }
-        if(result.size()>0){
-            boolean f = true;
-        }
         return result.stream().collect(Collectors.toMap(ParsedException::hashCode, el -> el, (e1, e2) -> e1));
+    }
+
+    private String removeAnonimousMarks(String className) {
+        StringBuilder tmp = new StringBuilder();
+        String[] s = className.split("\\.");
+        for (int i = 0; i < s.length - 1; i++) tmp.append(s[i]).append(".");
+        tmp.append(s[s.length - 1].split("\\$")[0]);
+        return tmp.toString();
     }
 
     public List<ParsedException> parseAllTestExceptions(String text) {
         setHeadlineMatcher(text);
         setTraceMatcher(text);
         List<ParsedException> result = new ArrayList<>();
-        List<Integer> headPositions = new ArrayList<>();
+      /*  List<Integer> headPositions = new ArrayList<>();
         while (headlineMatcher.find()) {
             headPositions.add(headlineMatcher.start());
             ParsedException tmp = new ParsedException(headlineMatcher.group(1), headlineMatcher.group(4));
@@ -180,7 +186,7 @@ public class StacktraceProvider {
             if (tmp.getStacktrace().size() == 0) {
                 iter.remove();
             }
-        }
+        }*/
         return result;
     }
 
