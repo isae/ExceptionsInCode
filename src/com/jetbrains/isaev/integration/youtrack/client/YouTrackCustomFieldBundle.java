@@ -4,7 +4,6 @@
 
 package com.jetbrains.isaev.integration.youtrack.client;
 
-import com.jetbrains.isaev.integration.youtrack.client.YouTrackCustomField.YouTrackCustomFieldType;
 import com.jetbrains.isaev.integration.youtrack.utils.BundleValues;
 
 import java.util.LinkedList;

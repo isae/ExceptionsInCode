@@ -1,11 +1,11 @@
 package com.jetbrains.isaev.integration.youtrack.client;
 
-import com.jetbrains.isaev.integration.youtrack.client.YouTrackCustomField.YouTrackCustomFieldType;
 import com.jetbrains.isaev.integration.youtrack.utils.*;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.UniformInterfaceException;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.api.representation.Form;
+import org.jetbrains.annotations.NotNull;
 
 import javax.ws.rs.core.MediaType;
 import javax.xml.bind.annotation.XmlRootElement;
@@ -189,6 +189,18 @@ public class YouTrackClient {
             throw new RuntimeException("Issue's project and summary can't be null.");
         }
     }
+
+    public void putNewCustomFieldPrototype(@NotNull YouTrackCustomFieldPrototype field){
+           /* WebResource resource =
+                    service.path("/admin/customfield").queryParam("project", issue.getProjectName())
+                            .queryParam("summary", issue.getSummary());
+            if (issue.getDescription() != null) {
+                resource = resource.queryParam("description", issue.getDescription());
+            }
+            ClientResponse response =
+                    checkClientResponse(resource.put(ClientResponse.class, ""), 201, "Failed put new issue");*/
+    }
+
 
     public void deleteIssue(final String issueId) {
         if (issueId != null) {
