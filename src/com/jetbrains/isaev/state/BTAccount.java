@@ -1,11 +1,5 @@
 package com.jetbrains.isaev.state;
 
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
-import com.j256.ormlite.field.DataType;
-import com.j256.ormlite.field.DatabaseField;
-import com.j256.ormlite.table.DatabaseTable;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
@@ -16,8 +10,7 @@ import java.util.List;
  * User: Xottab
  * Date: 25.07.2014
  */
-//@JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
-public class BTAccount implements Serializable {
+public class BTAccount{
     @NotNull
     private String domainName;
     @NotNull
@@ -27,7 +20,6 @@ public class BTAccount implements Serializable {
     @NotNull
     private BTAccountType type;
 
-    // @JsonManagedReference(value = "projects")
     private List<BTProject> projects;
     private int accountID;
 

@@ -1,7 +1,5 @@
 package com.jetbrains.isaev.state;
 
-import com.fasterxml.jackson.annotation.*;
-import com.j256.ormlite.table.DatabaseTable;
 import com.jetbrains.isaev.dao.ZipUtils;
 import com.jetbrains.isaev.ui.ParsedException;
 
@@ -13,7 +11,7 @@ import java.util.*;
  * User: Xottab
  * Date: 18.07.2014
  */
-public class BTIssue implements Serializable {
+public class BTIssue {
     private static final int SHOWN_TITLE_LENGTH = 50;
     private String title;
     private String description;
@@ -93,7 +91,6 @@ public class BTIssue implements Serializable {
         return number + ": " + shortenTitle(title);
     }
 
-    @JsonIgnore
     public String getDrawableDescription() {
         return number + ": " + title;
     }

@@ -190,15 +190,15 @@ public class YouTrackClient {
         }
     }
 
-    public void putNewCustomFieldPrototype(@NotNull YouTrackCustomFieldPrototype field){
-           /* WebResource resource =
-                    service.path("/admin/customfield").queryParam("project", issue.getProjectName())
-                            .queryParam("summary", issue.getSummary());
-            if (issue.getDescription() != null) {
-                resource = resource.queryParam("description", issue.getDescription());
-            }
-            ClientResponse response =
-                    checkClientResponse(resource.put(ClientResponse.class, ""), 201, "Failed put new issue");*/
+    public void putNewCustomFieldPrototype(@NotNull YouTrackCustomFieldPrototype field) {
+        WebResource resource =
+                service.path("/admin/customfield/field/").path(field.getName())
+                        .queryParam("typeName", field.getType().getName())
+                        .queryParam("isPrivate", String.valueOf(field.isPrivate()))
+                        .queryParam("defaultVisibility", String.valueOf(field.isDefaultVisibility()))
+                        .queryParam("autoAttached", String.valueOf(field.isAutoAttached()));
+        ClientResponse response =
+                checkClientResponse(resource.put(ClientResponse.class, ""), 201, "Failed put new custom field prototype");
     }
 
 
@@ -729,6 +729,18 @@ public class YouTrackClient {
     public YouTrackTimeSettings getTimeTrackingSettings() {
         return service.path("/admin/timetracking").accept("application/xml")
                 .get(YouTrackTimeSettings.class);
+    }
+
+    public void attachCustomFieldToProject(YouTrackProject proj, String name, String empty) {
+
+        WebResource resource =
+                service.path("/admin/project/")
+                        .path(proj.getProjectShortName())
+                        .path("/customfield/")
+                        .path(name)
+                        .queryParam("emptyFieldText", empty);
+        ClientResponse response =
+                checkClientResponse(resource.put(ClientResponse.class, ""), 201, "Failed to attach customField to project");
     }
 
     @XmlRootElement(name = "int")

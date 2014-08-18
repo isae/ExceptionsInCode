@@ -1,10 +1,5 @@
 package com.jetbrains.isaev.ui;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
-import com.j256.ormlite.table.DatabaseTable;
 import com.jetbrains.isaev.GlobalVariables;
 import com.jetbrains.isaev.issues.StackTraceElement;
 import com.jetbrains.isaev.state.BTIssue;
@@ -19,9 +14,8 @@ import java.util.stream.Collectors;
  * User: Xottab
  * Date: 23.07.2014
  */
-//@JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 
-public class ParsedException implements Serializable {
+public class ParsedException {
     @NotNull
     private String name;
     @NotNull
@@ -31,8 +25,16 @@ public class ParsedException implements Serializable {
     @NotNull
     private Map<Integer, StackTraceElement> stacktrace = new HashMap<>();
     private long exceptionID;
+    private static Comparator<? super StackTraceElement> stacktraceOrderComparator = new Comparator<StackTraceElement>() {
+        @Override
+        public int compare(StackTraceElement o1, StackTraceElement o2) {
+            byte or1 = o1.getOrder();
+            byte or2 = o2.getOrder();
+            return or1 == or2 ? 0 : or1 < or2 ? -1 : 1;
+        }
+    };
 
-    public ParsedException(int issueID,String name, long exceptionID, String optionalMessage) {
+    public ParsedException(int issueID, String name, long exceptionID, String optionalMessage) {
         this(name, optionalMessage);
         this.exceptionID = exceptionID;
         this.issueID = issueID;
@@ -46,7 +48,7 @@ public class ParsedException implements Serializable {
     @NotNull
     public BTIssue getIssue() {
         if (issue == null) issue = GlobalVariables.dao.getIssue(issueID);
-        if(issue==null){
+        if (issue == null) {
             boolean f = true;
         }
         return issue;
@@ -96,20 +98,14 @@ public class ParsedException implements Serializable {
      * must not be used before object persisted to db
      */
     public void orderStacktrace() {
-        if (stacktrace.size() > 1) {
-            Map<Long, StackTraceElement> map = stacktrace.values().stream().collect(Collectors.toMap(StackTraceElement::getID, el -> el));
-            map.values().forEach((el) -> {
-                if (el.getNextID() != 0) {
-                    StackTraceElement element = map.get(el.getNextID());
-                    element.setPrev(el);
-                    el.setNext(element);
-                }
-                if (el.getPrevID() != 0) {
-                    StackTraceElement element = map.get(el.getPrevID());
-                    element.setNext(el);
-                    el.setPrev(element);
-                }
-            });
+        StackTraceElement[] elements = stacktrace.values().stream().sorted(stacktraceOrderComparator).toArray(StackTraceElement[]::new);
+        for (int i = 0; i < elements.length; i++) {
+            if (i > 0) {
+                elements[i].setPrev(elements[i - 1]);
+            }
+            if (i < elements.length - 1) {
+                elements[i].setNext(elements[i + 1]);
+            }
         }
     }
 

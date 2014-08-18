@@ -18,7 +18,6 @@ public class IconProvider {
      * Retrieve an icon from its reference
      *
      * @param iconRef the icon reference
-     *
      * @return the loaded icon
      */
     public static Icon getIcon(@NotNull IconRef iconRef) {
@@ -32,7 +31,8 @@ public class IconProvider {
     public static enum IconRef {
         YOUTRACK("youtrack"),
         JIRA("jira_icon"),
-        WARN("warn");
+        WARN("warn"),
+        JIRA_SMALL("jira_icon_small"), YOUTRACK_SMALL("youtrack_small");
 
         private final String imgName;
 

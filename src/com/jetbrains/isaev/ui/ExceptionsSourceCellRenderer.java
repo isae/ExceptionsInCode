@@ -12,7 +12,18 @@ import javax.swing.*;
 public class ExceptionsSourceCellRenderer extends ListCellRendererWrapper<BTAccount> {
     @Override
     public void customize(JList list, BTAccount value, int index, boolean selected, boolean hasFocus) {
-        setIcon(IconProvider.getIcon(IconProvider.IconRef.YOUTRACK));
+        Icon icon = null;
+        switch (value.getType()) {
+            case YOUTRACK: {
+                icon = IconProvider.getIcon(IconProvider.IconRef.YOUTRACK);
+                break;
+            }
+            case JIRA: {
+                icon = IconProvider.getIcon(IconProvider.IconRef.JIRA);
+                break;
+            }
+        }
+        setIcon(icon);
         setText(value.getDomainName());
     }
 }

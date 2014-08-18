@@ -1,7 +1,5 @@
 package com.jetbrains.isaev.issues;
 
-import com.fasterxml.jackson.annotation.*;
-import com.j256.ormlite.table.DatabaseTable;
 import com.jetbrains.isaev.GlobalVariables;
 import com.jetbrains.isaev.ui.ParsedException;
 import org.jetbrains.annotations.NotNull;
@@ -11,9 +9,8 @@ import java.io.Serializable;
 /**
  * Created by Ilya.Isaev on 30.07.2014.
  */
-//@JsonIdentityInfo(generator = ObjectIdGenerators.IntSequenceGenerator.class, property = "@id")
 
-public class StackTraceElement implements Serializable {
+public class StackTraceElement {
     @NotNull
     private String declaringClass;
     @NotNull
@@ -22,17 +19,22 @@ public class StackTraceElement implements Serializable {
     //todo some files my have same name!!
     private String fileName;
     private int lineNumber;
-    // @JsonManagedReference(value = "next")
     private StackTraceElement next;
-    private long prevID;
-    private long nextID;
-    //@JsonBackReference(value = "next")
+    private byte order;
+
+    public byte getOrder() {
+        return order;
+    }
+
+    public void setOrder(byte order) {
+        this.order = order;
+    }
+
     private StackTraceElement prev;
-    // @JsonBackReference(value = "trace")
     private ParsedException exception;
     private long ID;
 
-    public StackTraceElement(long stElementID, String declaringClass, String methodName, String fileName, int lineNumber, long exceptionID) {
+    public StackTraceElement(long stElementID, String declaringClass, String methodName, String fileName, int lineNumber, long exceptionID, int order) {
         this(stElementID, declaringClass, methodName, fileName, lineNumber);
         this.exceptionID = exceptionID;
     }
@@ -46,22 +48,6 @@ public class StackTraceElement implements Serializable {
     }
 
     private long exceptionID;
-
-    public long getPrevID() {
-        return prevID;
-    }
-
-    public void setPrevID(long prevID) {
-        this.prevID = prevID;
-    }
-
-    public long getNextID() {
-        return nextID;
-    }
-
-    public void setNextID(long nextID) {
-        this.nextID = nextID;
-    }
 
     public long getID() {
         return ID;

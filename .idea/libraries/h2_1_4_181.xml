@@ -2,7 +2,6 @@
   <library name="h2-1.4.181">
     <CLASSES>
       <root url="jar://$PROJECT_DIR$/lib/h2-1.4.181.jar!/" />
-      <root url="jar://$PROJECT_DIR$/lib/ormlite-core-4.48.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES>

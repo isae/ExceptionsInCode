@@ -5,10 +5,22 @@ package com.jetbrains.isaev.state;
  */
 public enum BTAccountType {
 
-    YOUTRACK(1), JIRA(2);
+    YOUTRACK(1, "Jetbrains YouTrack"), JIRA(2, "Atlassian JIRA");
 
-    BTAccountType(int type) {
+    public String getName() {
+        return name;
+    }
+
+    public byte getType() {
+        return type;
+    }
+
+    private final String name;
+    private byte type;
+
+    BTAccountType(int type, String s) {
         this.type = (byte) type;
+        this.name = s;
     }
 
     public static BTAccountType valueOf(byte b) {
@@ -18,5 +30,4 @@ public enum BTAccountType {
         return null;
     }
 
-    public byte type;
 }

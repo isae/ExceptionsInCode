@@ -99,7 +99,7 @@ public class StacktraceProvider {
         for (int i = 0; i < headPositions.size(); i++) {
             int next = i == headPositions.size() - 1 ? text.length() : headPositions.get(i + 1);
             Matcher m = traceMatcher.region(headPositions.get(i), next);
-            Map<Integer, StackTraceElement> stackTrace = new HashMap<>();
+            List<StackTraceElement> stackTrace = new ArrayList<>();
             String sourceFile = null;
             while (m.find()) {
                 String className = m.group(1);
@@ -125,12 +125,22 @@ public class StacktraceProvider {
                     StackTraceElement element = new StackTraceElement(className, methodName,
                             sourceFile, lineNum);
                     element.setException(result.get(i));
-                    stackTrace.put(element.hashCode(), element);
+                    stackTrace.add(element);
                     break;
                 }
             }
-
-            result.get(i).setStacktrace(stackTrace);
+            if (stackTrace.size() > 1) {
+                for (int j = 0; j < stackTrace.size(); i++) {
+                    stackTrace.get(j).setOrder((byte) (j + 1));
+                }
+            }
+            if (stackTrace.size() > 0) {
+                Map<Integer, StackTraceElement> elementMap = new HashMap<>();
+                for (StackTraceElement el : stackTrace) {
+                    elementMap.put(el.hashCode(), el);
+                }
+                result.get(i).setStacktrace(elementMap);
+            }
         }
         Iterator<ParsedException> iter = result.iterator();
         while (iter.hasNext()) {

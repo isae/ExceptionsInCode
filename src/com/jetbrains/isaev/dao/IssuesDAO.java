@@ -32,48 +32,47 @@ public class IssuesDAO {
     private static final String DB_NAME = "BTIssuesDB";
     private static final int CURRENT_DATABASE_VERSION = 1;
     private static final String STORAGE_FOLDER_PATH = GlobalVariables.project.getBasePath() + PATH_SEPARATOR + ".idea" + PATH_SEPARATOR + "BTIssuesDB";
-    private static final String ACCOUNTS_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS Accounts (accountID INT  PRIMARY KEY  AUTO_INCREMENT, domainName VARCHAR(255) NOT NULL, login VARCHAR(255) NOT NULL, password VARCHAR(255) NOT NULL, type TINYINT NOT NULL, UNIQUE(domainName, login, password))";
-    private static final String PROJECTS_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS Projects (projectID INT  PRIMARY KEY  AUTO_INCREMENT, accountID INT, shortName VARCHAR(255), longName VARCHAR(255), lastUpdated TIMESTAMP, FOREIGN KEY(accountID) REFERENCES Accounts(accountID),UNIQUE(accountID,shortName,longName))";
-    private static final String ISSUES_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS Issues (issueID INT  PRIMARY KEY  AUTO_INCREMENT, projectID INT, title VARCHAR(1023), description CLOB, number VARCHAR(63), lastUpdated TIMESTAMP, FOREIGN KEY(projectID) REFERENCES Projects(projectID))";
-    private static final String EXCEPTIONS_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS Exceptions (exceptionID IDENTITY, issueID INT, name VARCHAR(255), message CLOB, FOREIGN KEY(issueID) REFERENCES Issues(issueID))";
-    private static final String ST_ELEMENTS_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS STElements (stElementID IDENTITY, exceptionID BIGINT, declaringClass VARCHAR(255), methodName VARCHAR(255), fileName VARCHAR(255), lineNumber INT, prev BIGINT, next BIGINT, FOREIGN KEY(exceptionID) REFERENCES Exceptions(exceptionID))";
+    private static final String ACCOUNTS_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS Accounts (" +
+            "accountID INT  PRIMARY KEY  AUTO_INCREMENT, " +
+            "domainName VARCHAR(255) NOT NULL, " +
+            "login VARCHAR(255) NOT NULL, " +
+            "password VARCHAR(255) NOT NULL, " +
+            "type TINYINT NOT NULL, " +
+            "UNIQUE(domainName, login, password))";
+    private static final String PROJECTS_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS Projects (" +
+            "projectID INT  PRIMARY KEY  AUTO_INCREMENT, " +
+            "accountID INT, shortName VARCHAR(255), " +
+            "longName VARCHAR(255), " +
+            "lastUpdated TIMESTAMP, " +
+            "FOREIGN KEY(accountID) REFERENCES Accounts(accountID),UNIQUE(accountID,shortName,longName))";
+    private static final String ISSUES_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS Issues (" +
+            "issueID INT  PRIMARY KEY  AUTO_INCREMENT, " +
+            "projectID INT, " +
+            "title VARCHAR(1023), " +
+            "description CLOB, " +
+            "number VARCHAR(63), " +
+            "lastUpdated TIMESTAMP, " +
+            "FOREIGN KEY(projectID) REFERENCES Projects(projectID))";
+    private static final String EXCEPTIONS_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS Exceptions (" +
+            "exceptionID IDENTITY, " +
+            "issueID INT, " +
+            "name VARCHAR(255), " +
+            "message CLOB, " +
+            "FOREIGN KEY(issueID) REFERENCES Issues(issueID))";
+    private static final String ST_ELEMENTS_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS STElements (" +
+            "stElementID IDENTITY, " +
+            "exceptionID BIGINT, " +
+            "declaringClass VARCHAR(255), " +
+            "methodName VARCHAR(255), " +
+            "fileName VARCHAR(255), " +
+            "lineNumber INT, " +
+            "anOrder TINYINT, " +
+            "FOREIGN KEY(exceptionID) REFERENCES Exceptions(exceptionID))";
     protected static final Logger logger = Logger.getInstance(IssuesDAO.class);
     private static IssuesDAO instance;
     private static boolean dbChanged = false;
-
-    public void updateProject(BTProject btProject) {
-        db.update("UPDATE Projects SET shortName = ? , longName = ? , lastUpdated = ? WHERE projectID = ?",
-                new SqlParameterValue(Types.VARCHAR, btProject.getShortName()),
-                new SqlParameterValue(Types.VARCHAR, btProject.getFullName()),
-                new SqlParameterValue(Types.TIMESTAMP, btProject.getLastUpdated()),
-                new SqlParameterValue(Types.INTEGER, btProject.getProjectID()));
-    }
-
-    public ParsedException getException(long exceptionID) {
-        return db.query("SELECT * FROM Exceptions WHERE exceptionID = ?", new Object[]{exceptionID}, (ResultSet rs) -> {
-            if (rs.next()) {
-                return new ParsedException(rs.getInt("issueID"), rs.getString("name"), rs.getLong("exceptionID"), getStringFromClob(rs.getClob("message")));
-            }
-            return null;
-        });
-    }
-
-    public BTIssue getIssue(int issueID) {
-        BTIssue issue = db.query("SELECT * FROM Issues WHERE issueID = ?", new Object[]{issueID}, (ResultSet rs) -> {
-            boolean f = true;
-            if (rs.next()) {
-                BTIssue issue1 = new BTIssue(rs.getInt("issueID"), rs.getString("title"), getStringFromClob(rs.getClob("description")), rs.getTimestamp("lastUpdated"), rs.getString("number"), rs.getInt("projectID"));
-                return issue1;
-            } else {
-                return null;
-            }
-        });
-        return issue;
-    }
-
-    public void deleteBtAccount(BTAccount acc) {
-        db.update("DELETE FROM Accounts WHERE accountID = ?", acc.getAccountID());
-    }
+    JdbcTemplate db;
+    private static RowMapper<StackTraceElement> stackTraceElementRowMapper = (rs, rowNum) -> new StackTraceElement(rs.getLong("stElementID"), rs.getString("declaringClass"), rs.getString("methodName"), rs.getString("fileName"), rs.getInt("lineNumber"), rs.getLong("exceptionID"), rs.getByte("anOrder"));
 
     private class CachedArrayList<T> extends ArrayList<T> {
         public boolean stateChanged = true;
@@ -83,6 +82,8 @@ public class IssuesDAO {
         public boolean stateChanged = true;
     }
 
+    private CachedArrayList<BTIssue> issues;
+    private CachedHashSet<BTAccount> accounts;
 
     public static IssuesDAO getInstance() {
         if (instance == null) {
@@ -91,8 +92,6 @@ public class IssuesDAO {
         }
         return instance;
     }
-
-    JdbcTemplate db;
 
     protected IssuesDAO() {
         SimpleDriverDataSource dataSource = new SimpleDriverDataSource();
@@ -130,8 +129,40 @@ public class IssuesDAO {
         //there are one version currently
     }
 
-    private CachedArrayList<BTIssue> issues;
-    private CachedHashSet<BTAccount> accounts;
+
+    public void updateProject(BTProject btProject) {
+        db.update("UPDATE Projects SET shortName = ? , longName = ? , lastUpdated = ? WHERE projectID = ?",
+                new SqlParameterValue(Types.VARCHAR, btProject.getShortName()),
+                new SqlParameterValue(Types.VARCHAR, btProject.getFullName()),
+                new SqlParameterValue(Types.TIMESTAMP, btProject.getLastUpdated()),
+                new SqlParameterValue(Types.INTEGER, btProject.getProjectID()));
+    }
+
+    public ParsedException getException(long exceptionID) {
+        return db.query("SELECT * FROM Exceptions WHERE exceptionID = ?", new Object[]{exceptionID}, (ResultSet rs) -> {
+            if (rs.next()) {
+                return new ParsedException(rs.getInt("issueID"), rs.getString("name"), rs.getLong("exceptionID"), getStringFromClob(rs.getClob("message")));
+            }
+            return null;
+        });
+    }
+
+    public BTIssue getIssue(int issueID) {
+        BTIssue issue = db.query("SELECT * FROM Issues WHERE issueID = ?", new Object[]{issueID}, (ResultSet rs) -> {
+            boolean f = true;
+            if (rs.next()) {
+                BTIssue issue1 = new BTIssue(rs.getInt("issueID"), rs.getString("title"), getStringFromClob(rs.getClob("description")), rs.getTimestamp("lastUpdated"), rs.getString("number"), rs.getInt("projectID"));
+                return issue1;
+            } else {
+                return null;
+            }
+        });
+        return issue;
+    }
+
+    public void deleteBtAccount(BTAccount acc) {
+        db.update("DELETE FROM Accounts WHERE accountID = ?", acc.getAccountID());
+    }
 
     public List<BTIssue> getAllIssuesFullState() {
         Map<Integer, BTIssue> btIssues = new HashMap<>();//new TreeSet<>((i1, i2) -> i1.getIssueID() < i2.getIssueID() ? -1 : 1);
@@ -143,7 +174,7 @@ public class IssuesDAO {
             if (!issue.getExceptions().containsKey(exception.hashCode()))
                 issue.getExceptions().put(exception.hashCode(), exception);
             exception = issue.getExceptions().get(exception.hashCode());
-            StackTraceElement element = new StackTraceElement(rs.getLong("stElementID"), rs.getString("declaringClass"), rs.getString("methodName"), rs.getString("fileName"), rs.getInt("lineNumber"), rs.getLong("exceptionID"));
+            StackTraceElement element = new StackTraceElement(rs.getLong("stElementID"), rs.getString("declaringClass"), rs.getString("methodName"), rs.getString("fileName"), rs.getInt("lineNumber"), rs.getLong("exceptionID"), rs.getByte("anOrder"));
             if (!exception.getStacktrace().containsKey(element.hashCode()))
                 exception.getStacktrace().put(element.hashCode(), element);
             return null;
@@ -209,30 +240,24 @@ public class IssuesDAO {
     }
 
     public List<StackTraceElement> getMethodNameToSTElement(String className, String methodName) {
-        List<StackTraceElement> result = db.query("SELECT * FROM STElements WHERE declaringClass = ? AND methodName = ?", (new Object[]{className, methodName}), (rs, i) -> {
-            return new StackTraceElement(rs.getLong("stElementID"), rs.getString("declaringClass"), rs.getString("methodName"), rs.getString("fileName"), rs.getInt("lineNumber"), rs.getLong("exceptionID"));
-        });
+        List<StackTraceElement> result = db.query("SELECT * FROM STElements WHERE declaringClass = ? AND methodName = ?", (new Object[]{className, methodName}), stackTraceElementRowMapper);
         return result;
     }
 
     public List<StackTraceElement> getClassNameToSTElement(String className) {
-        return db.query("SELECT * FROM STElements WHERE declaringClass = ?", (new Object[]{className}), (rs, i) -> {
-            return new StackTraceElement(rs.getLong("stElementID"), rs.getString("declaringClass"), rs.getString("methodName"), rs.getString("fileName"), rs.getInt("lineNumber"), rs.getLong("exceptionID"));
-        });
+        return db.query("SELECT * FROM STElements WHERE declaringClass = ?", (new Object[]{className}), stackTraceElementRowMapper);
     }
 
 
     public List<StackTraceElement> getFileNameToSTElement(String fileName) {
-        return db.query("SELECT * FROM STElements WHERE fileName = ?", (new Object[]{fileName}), (rs, i) -> {
-            return new StackTraceElement(rs.getLong("stElementID"), rs.getString("declaringClass"), rs.getString("methodName"), rs.getString("fileName"), rs.getInt("lineNumber"), rs.getLong("exceptionID"));
-        });
+        return db.query("SELECT * FROM STElements WHERE fileName = ?", (new Object[]{fileName}),stackTraceElementRowMapper);
     }
 
     public void updateAccounts(List<BTAccount> accountsFromUI) {
         accountsFromUI.forEach(e -> {
             List<BTAccount> acc = db.query("SELECT * FROM Accounts WHERE domainName= ? AND login = ? AND password = ? ", new Object[]{e.getDomainName(), e.getLogin(), e.getPassword()}, (rs, i) -> new BTAccount(rs.getInt("accountID"), rs.getString("domainName"), rs.getString("login"), rs.getString("password"), BTAccountType.valueOf(rs.getByte("type"))));
             if (acc.size() == 0) {
-                db.update("INSERT INTO Accounts ( domainName, login, password, type) values (?,?,?,?)", e.getDomainName(), e.getLogin(), e.getPassword(), e.getType().type);
+                db.update("INSERT INTO Accounts ( domainName, login, password, type) values (?,?,?,?)", e.getDomainName(), e.getLogin(), e.getPassword(), e.getType().getType());
                 int tmp = db.query("SELECT accountID FROM Accounts WHERE (domainName = ? AND login = ? AND password = ? )", new Object[]{e.getDomainName(), e.getLogin(), e.getPassword()}, (ResultSet rs) -> {
                     rs.next();
                     return rs.getInt(1);
@@ -307,25 +332,16 @@ public class IssuesDAO {
                 el.setExceptionID(e.getExceptionID());
                 KeyHolder hold = new GeneratedKeyHolder();
                 db.update(con -> {
-                    PreparedStatement statement = con.prepareStatement("INSERT INTO STElements (exceptionID,declaringClass,methodName,fileName, lineNumber) values (?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
+                    PreparedStatement statement = con.prepareStatement("INSERT INTO STElements (exceptionID,declaringClass,methodName,fileName, lineNumber, anOrder) values (?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
                     statement.setLong(1, el.getExceptionID());
                     statement.setString(2, el.getDeclaringClass());
                     statement.setString(3, el.getMethodName());
                     statement.setString(4, el.getFileName());
                     statement.setInt(5, el.getLineNumber());
+                    statement.setByte(6, el.getOrder());
                     return statement;
                 }, hold);
                 el.setID(hold.getKey().longValue());
-            }
-            for (int i = 0; i < elements.length; i++) {
-                if (i > 0) {
-                    db.update("UPDATE STElements SET prev = ? WHERE stElementID= ?", elements[i - 1].getID(), elements[i].getID());
-                    elements[i].setPrevID(elements[i - 1].getID());
-                }
-                if (i < elements.length - 1) {
-                    db.update("UPDATE STElements SET next = ? WHERE stElementID= ?", elements[i + 1].getID(), elements[i].getID());
-                    elements[i].setNextID(elements[i + 1].getID());
-                }
             }
         });
     }

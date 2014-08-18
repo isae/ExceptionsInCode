@@ -40,6 +40,10 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
     private static YouTrackClientFactory clientFactory;
     private static DefaultListModel<BTAccount> model = new DefaultListModel<>();
     private static DefaultListModel<SelectableItem<BTProject>> projectsModel = new DefaultListModel<>();
+    private static DefaultComboBoxModel<BTAccountType> accountTypeModel = new DefaultComboBoxModel<>();
+    static {
+        for(BTAccountType type: BTAccountType.values()) accountTypeModel.addElement(type);
+    }
     private static IssuesDAO issuesDAO = GlobalVariables.dao;
     DocumentListener changeListener = new DocumentListener() {
         public void changedUpdate(DocumentEvent e) {
@@ -71,11 +75,14 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
     private JButton processIssuesButton;
     private JLabel projectsListLabel;
     private ActionLink actionLink1;
+    private JComboBox comboBox1;
     private ApplyAction applyAction = new ApplyAction();
 
     public AddNewReportsSourcesDialog() {
         super(GlobalVariables.project, false);
         init();
+        comboBox1.setModel(accountTypeModel);
+        comboBox1.setRenderer(new BTAccountIconListRenderer());
         clientFactory = new YouTrackClientFactory();
         setTitle("Sources of Reports");
 
@@ -232,6 +239,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
             account.setDomainName(textField1.getText());
             account.setLogin(textField2.getText());
             account.setPassword(new String(passwordField1.getPassword()));
+            account.setType((BTAccountType) comboBox1.getModel().getSelectedItem());
         }
     }
 
@@ -272,7 +280,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
         actionLink1 = new ActionLink("", IconUtil.getAddIcon(), new AnAction() {
             @Override
             public void actionPerformed(AnActionEvent e) {
-                BTAccount account = new BTAccount(textField1.getText(), textField2.getText(), new String(passwordField1.getPassword()), BTAccountType.YOUTRACK);
+                BTAccount account = new BTAccount(textField1.getText(), textField2.getText(), new String(passwordField1.getPassword()), (BTAccountType) comboBox1.getModel().getSelectedItem());
                 model.addElement(account);
             }
         });
