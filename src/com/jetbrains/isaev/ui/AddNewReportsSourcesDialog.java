@@ -133,7 +133,11 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
             public void actionPerformed(ActionEvent e) {
                 //   Messages.showInfoMessage(project, String.valueOf(lastSelectedPos), "Title");
                 int pos = accountsUIList.getSelectedIndex();
-                if (pos != -1) model.remove(pos);
+                if (pos != -1) {
+                    BTAccount acc = model.get(pos);
+                    if (acc.getAccountID() != 0) issuesDAO.deleteBtAccount(acc);
+                    model.remove(pos);
+                }
             }
         }, KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0), JComponent.WHEN_FOCUSED);
         textField1.getDocument().addDocumentListener(changeListener);

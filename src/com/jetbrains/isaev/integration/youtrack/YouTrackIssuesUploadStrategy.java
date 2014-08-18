@@ -73,7 +73,6 @@ public class YouTrackIssuesUploadStrategy extends IssuesUploadStrategy {
             is.setNumber(issue.getId());
             is.setExceptions(parsedExceptions);
             long updated = issue.getSingleField("updated") == null ? to : Long.valueOf(issue.getSingleField("updated"));
-            //todo this is wrong, last update field should be taken from youTrack, current way can slow process
             is.setLastUpdated(new Timestamp(updated));
             is.setProject(btProject);
             btProject.getIssues().add(is);

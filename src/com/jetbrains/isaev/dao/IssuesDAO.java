@@ -71,6 +71,10 @@ public class IssuesDAO {
         return issue;
     }
 
+    public void deleteBtAccount(BTAccount acc) {
+        db.update("DELETE FROM Accounts WHERE accountID = ?", acc.getAccountID());
+    }
+
     private class CachedArrayList<T> extends ArrayList<T> {
         public boolean stateChanged = true;
     }
@@ -175,16 +179,18 @@ public class IssuesDAO {
         accounts.clear();
         Map<Integer, BTAccount> tmp = new HashMap<>();
         Map<Integer, List<BTProject>> tmp2 = new HashMap<>();
-        db.query("SELECT * FROM Projects JOIN Accounts ON (Projects.accountID = Accounts.accountID)", (Object[]) null, (rs, i) -> {
+        db.query("SELECT * FROM Accounts LEFT OUTER JOIN Projects ON (Projects.accountID = Accounts.accountID)", (Object[]) null, (rs, i) -> {
             BTAccount acc = new BTAccount(rs.getInt("accountID"), rs.getString("domainName"), rs.getString("login"), rs.getString("password"), BTAccountType.valueOf(rs.getByte("type")));
             if (!tmp.containsKey(acc.getAccountID())) {
                 tmp.put(acc.getAccountID(), acc);
                 tmp2.put(acc.getAccountID(), new ArrayList<>());
             }
-            BTProject project = new BTProject(rs.getInt("projectID"), rs.getString("shortName"), rs.getString("longName"), rs.getTimestamp("lastUpdated"));
-            project.setBtAccount(tmp.get(acc.getAccountID()));
-            project.setMustBeUpdated(true);
-            tmp2.get(acc.getAccountID()).add(project);
+            if (rs.getInt("projectID") != 0) {
+                BTProject project = new BTProject(rs.getInt("projectID"), rs.getString("shortName"), rs.getString("longName"), rs.getTimestamp("lastUpdated"));
+                project.setBtAccount(tmp.get(acc.getAccountID()));
+                project.setMustBeUpdated(true);
+                tmp2.get(acc.getAccountID()).add(project);
+            }
             return acc;
         });
         if (tmp.size() == 0) return getOnlyAccounts();
