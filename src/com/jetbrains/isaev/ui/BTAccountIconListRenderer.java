@@ -17,11 +17,11 @@ public class BTAccountIconListRenderer extends ListCellRendererWrapper<BTAccount
             case YOUTRACK: {
                 icon = IconProvider.getIcon(IconProvider.IconRef.YOUTRACK_SMALL);
                 break;
-            }
+            }/*
             case JIRA: {
                 icon = IconProvider.getIcon(IconProvider.IconRef.JIRA_SMALL);
                 break;
-            }
+            }*/
         }
         setIcon(icon);
     }

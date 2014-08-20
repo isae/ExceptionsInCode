@@ -13,7 +13,6 @@
     <orderEntry type="library" name="mail" level="project" />
     <orderEntry type="library" name="h2-1.4.181" level="project" />
     <orderEntry type="library" name="rome-1.0.0" level="project" />
-    <orderEntry type="library" name="activation-1.1" level="project" />
     <orderEntry type="library" name="spring-beans-4.0.6.RELEASE" level="project" />
   </component>
 </module>

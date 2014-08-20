@@ -5,7 +5,7 @@ package com.jetbrains.isaev.state;
  */
 public enum BTAccountType {
 
-    YOUTRACK(1, "Jetbrains YouTrack"), JIRA(2, "Atlassian JIRA");
+    YOUTRACK(1, "Jetbrains YouTrack");//, JIRA(2, "Atlassian JIRA");
 
     public String getName() {
         return name;

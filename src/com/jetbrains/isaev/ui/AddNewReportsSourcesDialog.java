@@ -5,6 +5,7 @@ import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.ui.DialogWrapper;
+import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.util.SystemInfo;
 import com.intellij.ui.components.JBList;
 import com.intellij.ui.components.labels.ActionLink;
@@ -29,7 +30,9 @@ import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * User: Xottab
@@ -41,9 +44,11 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
     private static DefaultListModel<BTAccount> model = new DefaultListModel<>();
     private static DefaultListModel<SelectableItem<BTProject>> projectsModel = new DefaultListModel<>();
     private static DefaultComboBoxModel<BTAccountType> accountTypeModel = new DefaultComboBoxModel<>();
+
     static {
-        for(BTAccountType type: BTAccountType.values()) accountTypeModel.addElement(type);
+        for (BTAccountType type : BTAccountType.values()) accountTypeModel.addElement(type);
     }
+
     private static IssuesDAO issuesDAO = GlobalVariables.dao;
     DocumentListener changeListener = new DocumentListener() {
         public void changedUpdate(DocumentEvent e) {
@@ -76,26 +81,33 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
     private JLabel projectsListLabel;
     private ActionLink actionLink1;
     private JComboBox comboBox1;
+    private ActionLink actionLink2;
+    private JPanel workingPane;
     private ApplyAction applyAction = new ApplyAction();
+    private List<BTAccount> mustBeDeleted = new ArrayList<>();
+    private int prevSelectedIndex = -1;
 
     public AddNewReportsSourcesDialog() {
         super(GlobalVariables.project, false);
         init();
+        workingPane.setVisible(false);
         comboBox1.setModel(accountTypeModel);
         comboBox1.setRenderer(new BTAccountIconListRenderer());
         clientFactory = new YouTrackClientFactory();
         setTitle("Sources of Reports");
 
         setModal(true);
-        textField1.setText("http://youtrack.jetbrains.com");
-        textField2.setText("Ilya.Isaev@jetbrains.com");
-        passwordField1.setText(".Lu85Ga");
+        //textField1.setText("http://youtrack.jetbrains.com");
+        //textField2.setText("Ilya.Isaev@jetbrains.com");
+        //passwordField1.setText(".Lu85Ga");
         model.clear();
-        for (BTAccount acc : issuesDAO.getAccountsWithProjects()) {
-            model.addElement(acc);
-            for (BTProject proj : acc.getProjects())
-                for (BTIssue issue : proj.getIssues())
-                    System.out.println(issue.getNumber());
+        Set<BTAccount> accsFromDB = issuesDAO.getAccountsWithProjects();
+        if (!accsFromDB.isEmpty()) {
+            workingPane.setVisible(true);
+            for (BTAccount acc : accsFromDB) {
+                model.addElement(acc);
+            }
+            accountsUIList.setSelectedIndex(0);
         }
         accountsUIList.setModel(model);
         accountsUIList.getSelectionModel().setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -104,10 +116,17 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
         accountsUIList.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
+                if (prevSelectedIndex >= 0 && prevSelectedIndex < accountsUIList.getModel().getSize()) {
+                    BTAccount account = (BTAccount) accountsUIList.getModel().getElementAt(prevSelectedIndex);
+                    updateFieldsFromBTAccount(account);
+                    accountsUIList.repaint();
+                }
+
                 int tmp = accountsUIList.locationToIndex(e.getPoint());
+                //Messages.showInfoMessage("LALA ", prevSelectedIndex+"     "+tmp);
+                prevSelectedIndex = tmp;
                 if (tmp != -1) {
                     projectsModel.clear();
-                    // Messages.showInfoMessage(GlobalVariables.project, String.valueOf(tmp + " " + e.getFirstIndex()) + " " + e.getLastIndex() + " " + lastSelectedPos, "Title");
                     if (model.size() > 0) {
                         BTAccount account = model.get(accountsUIList.getSelectedIndex());
                         textField1.setText(account.getDomainName());
@@ -122,30 +141,8 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
                 super.mouseClicked(e);
             }
         });
-        accountsUIList.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if (accountsUIList.getModel().getSize() > 0) {
-                    int index = accountsUIList.locationToIndex(e.getPoint());
-                    BTAccount item = (BTAccount) accountsUIList.getModel().getElementAt(index);
-                    int k = 0;
-                    for (BTProject project1 : item.getProjects()) k += project1.getIssues().size();
-                    //Messages.showInfoMessage("Hello " + k, "Title");
-                }
-
-            }
-        });
-        accountsUIList.registerKeyboardAction(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                //   Messages.showInfoMessage(project, String.valueOf(lastSelectedPos), "Title");
-                int pos = accountsUIList.getSelectedIndex();
-                if (pos != -1) {
-                    BTAccount acc = model.get(pos);
-                    if (acc.getAccountID() != 0) issuesDAO.deleteBtAccount(acc);
-                    model.remove(pos);
-                }
-            }
+        accountsUIList.registerKeyboardAction(e -> {
+            removeCurrentListElement();
         }, KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0), JComponent.WHEN_FOCUSED);
         textField1.getDocument().addDocumentListener(changeListener);
         textField2.getDocument().addDocumentListener(changeListener);
@@ -163,10 +160,9 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
                     List<YouTrackProject> projects = client.getProjects();
                     List<BTProject> mustBeAdded = new ArrayList<>();
                     for (YouTrackProject project : projects) {
-                        BTProject wrapper = new BTProject(project.getProjectFullName(), project.getProjectShortName());
+                        BTProject wrapper = new BTProject(account, project.getProjectFullName(), project.getProjectShortName());
                         if (!projectsModel.contains(wrapper)) {
                             projectsModel.addElement(new SelectableItem<>(wrapper));
-                            wrapper.setBtAccount(account);
                             mustBeAdded.add(wrapper);
                         }
                     }
@@ -184,7 +180,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
                     BTAccount account = model.getElementAt(pos);
                     List<BTProject> projects = account.getProjects();
                     for (BTProject project : projects) {
-                        if (project.isMustBeUpdated() & project.getShortName().equals("IDEA")) {
+                        if (project.isMustBeUpdated()) {
                             ProgressManager.getInstance().run(new YouTrackIssuesUploadStrategy(project));
                         }
                     }
@@ -196,28 +192,19 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
             @Override
             public void mouseClicked(MouseEvent e) {
                 int index = projectsList.locationToIndex(e.getPoint());
-                SelectableItem<BTProject> item = (SelectableItem<BTProject>) projectsList.getModel().getElementAt(index);
-                //  Messages.showInfoMessage(project, "Hello " + index + " " + item.value.getTarget().getFullName() + " " + item.checkbox.isSelected(), "Title");
-                item.checkbox.setSelected(!item.checkbox.isSelected());
-                item.value.setMustBeUpdated(item.checkbox.isSelected());
-                //Messages.showInfoMessage(project, String.valueOf(item.checkbox.isSelected()), "Title");
-                Rectangle rect = projectsList.getCellBounds(index, index);
-                projectsList.repaint();//repaint(rect);
+                if (index >= 0 && index < projectsList.getModel().getSize()) {
+                    SelectableItem<BTProject> item = (SelectableItem<BTProject>) projectsList.getModel().getElementAt(index);
+                    item.checkbox.setSelected(!item.checkbox.isSelected());
+                    item.value.setMustBeUpdated(item.checkbox.isSelected());
+                    Rectangle rect = projectsList.getCellBounds(index, index);
+                    projectsList.repaint();
+                }
             }
         });
 
-// call onCancel() when cross is clicked
-        //  setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
-       /*addWindowListener(new WindowAdapter() {
-            public void windowClosing(WindowEvent e) {
-                onCancel();
-            }
-        });*/
-
-// call onCancel() on ESCAPE
         contentPane.registerKeyboardAction(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                onCancel();
+                dispose();
             }
         }, KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
     }
@@ -227,34 +214,44 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
         for (int i = 0; i < model.size(); i++) {
             accounts.add(model.get(i));
         }
+
         return accounts;
+    }
+
+    private void updateFieldsFromBTAccount(BTAccount acc) {
+        acc.setDomainName(textField1.getText());
+        acc.setLogin(textField2.getText());
+        acc.setPassword(new String(passwordField1.getPassword()));
+        acc.setType((BTAccountType) comboBox1.getModel().getSelectedItem());
+    }
+
+    private void removeCurrentListElement() {
+        prevSelectedIndex = -1;
+        int pos = accountsUIList.getSelectedIndex();
+        if (pos != -1) {
+            BTAccount acc = model.get(pos);
+            if (acc.getAccountID() != 0) mustBeDeleted.add(acc);
+            model.remove(pos);
+        }
     }
 
     private void saveCurrentAccount() {
         int pos = accountsUIList.getSelectedIndex();
         if (pos != -1) {
-            //Messages.showInfoMessage(GlobalVariables.project, String.valueOf(lastSelectedPos), "Title");
-
             BTAccount account = model.get(pos);
-            account.setDomainName(textField1.getText());
-            account.setLogin(textField2.getText());
-            account.setPassword(new String(passwordField1.getPassword()));
-            account.setType((BTAccountType) comboBox1.getModel().getSelectedItem());
+            updateFieldsFromBTAccount(account);
         }
     }
 
     @NotNull
     protected Action[] createActions() {
         if (getHelpId() == null) {
-            if (SystemInfo.isMac) {
+            if (SystemInfo.isMac)
                 return new Action[]{getCancelAction(), applyAction, getOKAction()};
-            }
-
             return new Action[]{getOKAction(), applyAction, getCancelAction()};
         } else {
-            if (SystemInfo.isMac) {
+            if (SystemInfo.isMac)
                 return new Action[]{getHelpAction(), getCancelAction(), applyAction, getOKAction()};
-            }
             return new Action[]{getOKAction(), applyAction, getCancelAction(), getHelpAction()};
         }
     }
@@ -265,31 +262,35 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
         return contentPane;
     }
 
-    private void onOK() {
-// add your code here
-        issuesDAO.updateAccounts(getAccountsFromUI());
-        dispose();
-    }
-
-    private void onCancel() {
-// add your code here if necessary
-        dispose();
+    @Override
+    protected void doOKAction() {
+        persistState();
+        super.doOKAction();
     }
 
     private void createUIComponents() {
         actionLink1 = new ActionLink("", IconUtil.getAddIcon(), new AnAction() {
             @Override
             public void actionPerformed(AnActionEvent e) {
-                BTAccount account = new BTAccount(textField1.getText(), textField2.getText(), new String(passwordField1.getPassword()), (BTAccountType) comboBox1.getModel().getSelectedItem());
+                workingPane.setVisible(true);
+                BTAccount account = new BTAccount(""/*textField1.getText()*/, ""/*textField2.getText()*/, ""/*new String(passwordField1.getPassword())*/, BTAccountType.YOUTRACK/*(BTAccountType) comboBox1.getModel().getSelectedItem()*/);
                 model.addElement(account);
             }
         });
+        actionLink2 = new ActionLink("", IconUtil.getRemoveIcon(), new AnAction() {
+            @Override
+            public void actionPerformed(AnActionEvent e) {
+                removeCurrentListElement();
+            }
+        });
         actionLink1.setBorder(new EmptyBorder(0, 0, 0, 5));
-        // TODO: place custom component creation code here
     }
 
-    private static class ExceptionTest {
-        public static String[] issues = {"IDEA-104113", "IDEA-121168"};
+    private void persistState() {
+        saveCurrentAccount();
+        accountsUIList.repaint();
+        for (BTAccount acc : mustBeDeleted) issuesDAO.deleteBtAccount(acc);
+        issuesDAO.updateAccounts(getAccountsFromUI());
     }
 
     private class ApplyAction extends AbstractAction {
@@ -299,9 +300,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
         }
 
         public void actionPerformed(final ActionEvent e) {
-            saveCurrentAccount();
-            accountsUIList.repaint();
-            issuesDAO.updateAccounts(getAccountsFromUI());
+            persistState();
             setEnabled(false);
         }
     }

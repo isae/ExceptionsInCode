@@ -27,8 +27,8 @@ import java.util.stream.Collectors;
 public class YouTrackIssuesUploadStrategy extends IssuesUploadStrategy {
     private static final int ISSUES_AT_ONE_TIME = 1000;
     private static final java.lang.String YOUTRACK_DATE_FORMAT_STRING = "yyyy-MM-dd'T'hh:mm:ss";
-  private static final java.lang.String STATE = " %23Open %23%7BIn Progress%7D ";
- //  private static final java.lang.String STATE = " %23%7BIn Progress%7D ";
+    private static final java.lang.String STATE = " %23Open %23%7BIn Progress%7D ";
+    //  private static final java.lang.String STATE = " %23%7BIn Progress%7D ";
     private static IssuesDAO dao = GlobalVariables.dao;
     private static StacktraceProvider provider = StacktraceProvider.getInstance();
     private static long to;
@@ -68,7 +68,7 @@ public class YouTrackIssuesUploadStrategy extends IssuesUploadStrategy {
             BTIssue is = new BTIssue();
             is.setProjectID(btProject.getProjectID());
             for (ParsedException ex : parsedExceptions.values()) ex.setIssue(is);
-            is.setDescription(mappedIssues.get(issue.getId()).getDescription());
+            is.setDescription(mappedIssues.get(issue.getId()).getDescription().replaceAll("<script [^<]+</script>", ""));
             is.setTitle(issue.getSummary());
             is.setNumber(issue.getId());
             is.setExceptions(parsedExceptions);

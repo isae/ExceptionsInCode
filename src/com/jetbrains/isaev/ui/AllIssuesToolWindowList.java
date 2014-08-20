@@ -50,7 +50,11 @@ public class AllIssuesToolWindowList extends JBList {
                 for (PsiFile file : FilenameIndex.getFilesByName(GlobalVariables.project, element.getFileName(), GlobalSearchScope.projectScope(GlobalVariables.project))) {
                     if (file instanceof PsiJavaFile) {
                         //todo check not only name but package too
-                        files.put(file.getName(), new Pair<>((PsiJavaFile) file, element));
+                        String className = ((PsiJavaFile) file).getClasses()[0].getQualifiedName();
+                        String className2 = element.getDeclaringClass();
+                        if (className.equals(className2)) {
+                            files.put(file.getName(), new Pair<>((PsiJavaFile) file, element));
+                        }
                     }
                 }
             }

@@ -17,11 +17,11 @@ public class ExceptionsSourceCellRenderer extends ListCellRendererWrapper<BTAcco
             case YOUTRACK: {
                 icon = IconProvider.getIcon(IconProvider.IconRef.YOUTRACK);
                 break;
-            }
+            }/*
             case JIRA: {
                 icon = IconProvider.getIcon(IconProvider.IconRef.JIRA);
                 break;
-            }
+            }*/
         }
         setIcon(icon);
         setText(value.getDomainName());

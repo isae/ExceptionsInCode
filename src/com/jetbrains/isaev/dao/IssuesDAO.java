@@ -43,8 +43,9 @@ public class IssuesDAO {
             "projectID INT  PRIMARY KEY  AUTO_INCREMENT, " +
             "accountID INT, shortName VARCHAR(255), " +
             "longName VARCHAR(255), " +
+            "mustBeUpdated BOOL, " +
             "lastUpdated TIMESTAMP, " +
-            "FOREIGN KEY(accountID) REFERENCES Accounts(accountID),UNIQUE(accountID,shortName,longName))";
+            "FOREIGN KEY(accountID) REFERENCES Accounts(accountID) ON DELETE CASCADE,UNIQUE(accountID,shortName,longName))";
     private static final String ISSUES_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS Issues (" +
             "issueID INT  PRIMARY KEY  AUTO_INCREMENT, " +
             "projectID INT, " +
@@ -52,13 +53,13 @@ public class IssuesDAO {
             "description CLOB, " +
             "number VARCHAR(63), " +
             "lastUpdated TIMESTAMP, " +
-            "FOREIGN KEY(projectID) REFERENCES Projects(projectID))";
+            "FOREIGN KEY(projectID) REFERENCES Projects(projectID) ON DELETE CASCADE)";
     private static final String EXCEPTIONS_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS Exceptions (" +
             "exceptionID IDENTITY, " +
             "issueID INT, " +
             "name VARCHAR(255), " +
             "message CLOB, " +
-            "FOREIGN KEY(issueID) REFERENCES Issues(issueID))";
+            "FOREIGN KEY(issueID) REFERENCES Issues(issueID) ON DELETE CASCADE)";
     private static final String ST_ELEMENTS_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS STElements (" +
             "stElementID IDENTITY, " +
             "exceptionID BIGINT, " +
@@ -67,12 +68,13 @@ public class IssuesDAO {
             "fileName VARCHAR(255), " +
             "lineNumber INT, " +
             "anOrder TINYINT, " +
-            "FOREIGN KEY(exceptionID) REFERENCES Exceptions(exceptionID))";
+            "FOREIGN KEY(exceptionID) REFERENCES Exceptions(exceptionID) ON DELETE CASCADE)";
     protected static final Logger logger = Logger.getInstance(IssuesDAO.class);
     private static IssuesDAO instance;
     private static boolean dbChanged = false;
     JdbcTemplate db;
     private static RowMapper<StackTraceElement> stackTraceElementRowMapper = (rs, rowNum) -> new StackTraceElement(rs.getLong("stElementID"), rs.getString("declaringClass"), rs.getString("methodName"), rs.getString("fileName"), rs.getInt("lineNumber"), rs.getLong("exceptionID"), rs.getByte("anOrder"));
+
 
     private class CachedArrayList<T> extends ArrayList<T> {
         public boolean stateChanged = true;
@@ -131,10 +133,11 @@ public class IssuesDAO {
 
 
     public void updateProject(BTProject btProject) {
-        db.update("UPDATE Projects SET shortName = ? , longName = ? , lastUpdated = ? WHERE projectID = ?",
+        db.update("UPDATE Projects SET shortName = ? , longName = ? , lastUpdated = ? , mustBeUpdated = ? WHERE projectID = ?",
                 new SqlParameterValue(Types.VARCHAR, btProject.getShortName()),
                 new SqlParameterValue(Types.VARCHAR, btProject.getFullName()),
                 new SqlParameterValue(Types.TIMESTAMP, btProject.getLastUpdated()),
+                new SqlParameterValue(Types.BOOLEAN, btProject.isMustBeUpdated()),
                 new SqlParameterValue(Types.INTEGER, btProject.getProjectID()));
     }
 
@@ -197,7 +200,7 @@ public class IssuesDAO {
     }
 
     public List<BTProject> getProjects() {
-        return db.query("SELECT * FROM Projects", (Object[]) null, (rs, i) -> new BTProject(rs.getInt("projectID"), rs.getString("shortName"), rs.getString("longName"), rs.getTimestamp("lastUpdated")));
+        return db.query("SELECT * FROM Projects", (Object[]) null, (rs, i) -> new BTProject(rs.getInt("projectID"), rs.getInt("accountID"), rs.getString("shortName"), rs.getString("longName"), rs.getTimestamp("lastUpdated"), rs.getBoolean("mustBeUpdated")));
     }
 
     private String getStringFromClob(Clob clob) throws SQLException {
@@ -217,9 +220,8 @@ public class IssuesDAO {
                 tmp2.put(acc.getAccountID(), new ArrayList<>());
             }
             if (rs.getInt("projectID") != 0) {
-                BTProject project = new BTProject(rs.getInt("projectID"), rs.getString("shortName"), rs.getString("longName"), rs.getTimestamp("lastUpdated"));
+                BTProject project = new BTProject(rs.getInt("projectID"), rs.getInt("accountID"), rs.getString("shortName"), rs.getString("longName"), rs.getTimestamp("lastUpdated"), rs.getBoolean("mustBeUpdated"));
                 project.setBtAccount(tmp.get(acc.getAccountID()));
-                project.setMustBeUpdated(true);
                 tmp2.get(acc.getAccountID()).add(project);
             }
             return acc;
@@ -250,19 +252,23 @@ public class IssuesDAO {
 
 
     public List<StackTraceElement> getFileNameToSTElement(String fileName) {
-        return db.query("SELECT * FROM STElements WHERE fileName = ?", (new Object[]{fileName}),stackTraceElementRowMapper);
+        return db.query("SELECT * FROM STElements WHERE fileName = ?", (new Object[]{fileName}), stackTraceElementRowMapper);
     }
 
     public void updateAccounts(List<BTAccount> accountsFromUI) {
         accountsFromUI.forEach(e -> {
-            List<BTAccount> acc = db.query("SELECT * FROM Accounts WHERE domainName= ? AND login = ? AND password = ? ", new Object[]{e.getDomainName(), e.getLogin(), e.getPassword()}, (rs, i) -> new BTAccount(rs.getInt("accountID"), rs.getString("domainName"), rs.getString("login"), rs.getString("password"), BTAccountType.valueOf(rs.getByte("type"))));
-            if (acc.size() == 0) {
-                db.update("INSERT INTO Accounts ( domainName, login, password, type) values (?,?,?,?)", e.getDomainName(), e.getLogin(), e.getPassword(), e.getType().getType());
-                int tmp = db.query("SELECT accountID FROM Accounts WHERE (domainName = ? AND login = ? AND password = ? )", new Object[]{e.getDomainName(), e.getLogin(), e.getPassword()}, (ResultSet rs) -> {
-                    rs.next();
-                    return rs.getInt(1);
-                });
-                e.setAccountID(tmp);
+            if (e.getAccountID() != 0) {
+                db.update("UPDATE Accounts SET domainName = ? , login = ?, password = ?, type = ? WHERE accountID = ?", e.getDomainName(), e.getLogin(), e.getPassword(), e.getType().getType(), e.getAccountID());
+            } else {
+                List<BTAccount> acc = db.query("SELECT * FROM Accounts WHERE domainName= ? AND login = ? AND password = ? ", new Object[]{e.getDomainName(), e.getLogin(), e.getPassword()}, (rs, i) -> new BTAccount(rs.getInt("accountID"), rs.getString("domainName"), rs.getString("login"), rs.getString("password"), BTAccountType.valueOf(rs.getByte("type"))));
+                if (acc.size() == 0) {
+                    db.update("INSERT INTO Accounts ( domainName, login, password, type) values (?,?,?,?)", e.getDomainName(), e.getLogin(), e.getPassword(), e.getType().getType());
+                    int tmp = db.query("SELECT accountID FROM Accounts WHERE (domainName = ? AND login = ? AND password = ? )", new Object[]{e.getDomainName(), e.getLogin(), e.getPassword()}, (ResultSet rs) -> {
+                        rs.next();
+                        return rs.getInt(1);
+                    });
+                    e.setAccountID(tmp);
+                }
             }
             updateProjects(e.getAccountID(), e.getProjects());
         });
@@ -270,21 +276,20 @@ public class IssuesDAO {
 
     private void updateProjects(int accountID, List<BTProject> projects) {
         projects.forEach(p -> {
-            if (p.isMustBeUpdated()) {
-                List<BTProject> prs = db.query("SELECT * FROM Projects WHERE accountID= ? AND shortName = ? AND longName = ? ", new Object[]{accountID, p.getShortName(), p.getFullName()}, (rs, i) -> {
-                    //rs.next();
-                    int projectID = rs.getInt("projectID");
-                    String shortName = rs.getString("shortName");
-                    String longName = rs.getString("longName");
-                    return new BTProject(shortName, longName);
-                });
-                if (prs.size() == 0) {
-                    db.update("INSERT INTO Projects ( accountID, shortName, longName, lastUpdated) values (?,?,?,?)", accountID, p.getShortName(), p.getFullName(), p.getLastUpdated());
-                    p.setProjectID(db.query("SELECT projectID FROM Projects WHERE (accountID = ? AND shortName = ? AND longName = ? )", new Object[]{accountID, p.getShortName(), p.getFullName()}, (ResultSet rs) -> {
-                        rs.next();
-                        return rs.getInt(1);
-                    }));
-                }
+            List<BTProject> prs = db.query("SELECT * FROM Projects WHERE accountID= ? AND shortName = ? AND longName = ? ", new Object[]{accountID, p.getShortName(), p.getFullName()}, (rs, i) -> {
+                int projectID = rs.getInt("projectID");
+                String shortName = rs.getString("shortName");
+                String longName = rs.getString("longName");
+                return new BTProject(shortName, longName);
+            });
+            if (prs.size() == 0) {
+                db.update("INSERT INTO Projects ( accountID, shortName, longName, lastUpdated, mustBeUpdated) values (?,?,?,?, ?)", accountID, p.getShortName(), p.getFullName(), p.getLastUpdated(), p.isMustBeUpdated());
+                p.setProjectID(db.query("SELECT projectID FROM Projects WHERE (accountID = ? AND shortName = ? AND longName = ? )", new Object[]{accountID, p.getShortName(), p.getFullName()}, (ResultSet rs) -> {
+                    rs.next();
+                    return rs.getInt(1);
+                }));
+            } else {
+                db.update("UPDATE Projects SET mustBeUpdated = ? WHERE projectID = ?", p.isMustBeUpdated(), p.getProjectID());
             }
         });
     }
@@ -295,6 +300,12 @@ public class IssuesDAO {
 
     public void storeIssues(List<BTIssue> issues) {
         issues.forEach(e -> {
+            List<BTIssue> btIssues = db.query("SELECT * FROM Issues WHERE number =  ?", new Object[]{e.getNumber()}, (rs, i) -> {
+                return new BTIssue();
+            });
+            for (BTIssue issue : btIssues) {
+                db.update("DELETE FROM Issues WHERE number = ?", issue.getNumber());
+            }
 
             db.update("INSERT INTO Issues (projectID,title,description,number,lastUpdated) values (?,?,?,?,?)", e.getProjectID(), e.getTitle(), getClobFromString(e.getDescription()), e.getNumber(), e.getLastUpdated());
             e.setIssueID(db.query("SELECT issueID FROM Issues WHERE (projectID = ? AND number = ?)", new Object[]{e.getProjectID(), e.getNumber()}, (ResultSet rs) -> {
@@ -315,6 +326,25 @@ public class IssuesDAO {
         }
         return tmp;
     }
+
+
+    public BTProject getProject(int projectID) {
+        List<BTProject> prs = db.query("SELECT * FROM Projects WHERE projectID= ?", new Object[]{projectID}, (rs, i) -> {
+            return new BTProject(rs.getInt("projectID"), rs.getInt("accountID"), rs.getString("shortName"), rs.getString("longName"), rs.getTimestamp("lastUpdated"), rs.getBoolean("mustBeUpdated"));
+        });
+        if (prs.size() == 0)
+            return null;
+        return prs.get(0);
+    }
+
+
+    public BTAccount getAccount(int accountID) {
+        List<BTAccount> prs = db.query("SELECT * FROM Accounts WHERE accountID= ?", new Object[]{accountID}, (rs, i) -> new BTAccount(rs.getInt("accountID"), rs.getString("domainName"), rs.getString("login"), rs.getString("password"), BTAccountType.valueOf(rs.getByte("type"))));
+        if (prs.size() == 0)
+            return null;
+        return prs.get(0);
+    }
+
 
     private void storeExceptions(int issueID, Map<Integer, ParsedException> exceptions) {
         exceptions.values().forEach(e -> {

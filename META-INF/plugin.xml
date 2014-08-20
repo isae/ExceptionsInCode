@@ -83,10 +83,10 @@
                class="com.jetbrains.isaev.ui.ExceptionsInCodePopupSubmenu">
             <action id="exceptions.register.sources"
                     class="com.jetbrains.isaev.actions.AddNewBugtrackersAction">
-            </action>
+            </action><!--
             <action id="exceptions.show.all"
                     class="com.jetbrains.isaev.actions.ShowAllProjectIssuesAction">
-            </action>
+            </action>-->
         </group>
 
         <group id="exceptions.in.code.main">

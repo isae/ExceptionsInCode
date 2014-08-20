@@ -1,5 +1,6 @@
 package com.jetbrains.isaev.integration.youtrack.client;
 
+import com.intellij.openapi.diagnostic.Logger;
 import com.jetbrains.isaev.integration.youtrack.utils.*;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.UniformInterfaceException;
@@ -154,6 +155,7 @@ public class YouTrackClient {
             return service.path("/project/all").accept("application/xml").get(YouTrackProjectsList.class)
                     .getProjects();
         } catch (Exception e) {
+            Logger.getInstance(YouTrackClient.class).warn(e);
             throw new RuntimeException("Exception while get list of projects\n" + e.getMessage());
         }
     }

@@ -1,5 +1,6 @@
 package com.jetbrains.isaev.state;
 
+import com.jetbrains.isaev.GlobalVariables;
 import com.jetbrains.isaev.dao.ZipUtils;
 import com.jetbrains.isaev.ui.ParsedException;
 
@@ -104,6 +105,7 @@ public class BTIssue {
     }
 
     public BTProject getProject() {
+        if(project==null) project = GlobalVariables.dao.getProject(projectID);
         return project;
     }
 
