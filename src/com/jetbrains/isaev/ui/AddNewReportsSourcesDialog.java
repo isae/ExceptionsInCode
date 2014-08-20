@@ -41,9 +41,9 @@ import java.util.Set;
 public class AddNewReportsSourcesDialog extends DialogWrapper {
     //static int lastSelectedPos = -1;
     private static YouTrackClientFactory clientFactory;
-    private static DefaultListModel<BTAccount> model = new DefaultListModel<>();
-    private static DefaultListModel<SelectableItem<BTProject>> projectsModel = new DefaultListModel<>();
-    private static DefaultComboBoxModel<BTAccountType> accountTypeModel = new DefaultComboBoxModel<>();
+    private static DefaultListModel<BTAccount> model = new DefaultListModel<BTAccount>();
+    private static DefaultListModel<SelectableItem<BTProject>> projectsModel = new DefaultListModel<SelectableItem<BTProject>>();
+    private static DefaultComboBoxModel<BTAccountType> accountTypeModel = new DefaultComboBoxModel<BTAccountType>();
 
     static {
         for (BTAccountType type : BTAccountType.values()) accountTypeModel.addElement(type);
@@ -84,7 +84,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
     private ActionLink actionLink2;
     private JPanel workingPane;
     private ApplyAction applyAction = new ApplyAction();
-    private List<BTAccount> mustBeDeleted = new ArrayList<>();
+    private List<BTAccount> mustBeDeleted = new ArrayList<BTAccount>();
     private int prevSelectedIndex = -1;
 
     public AddNewReportsSourcesDialog() {
@@ -133,7 +133,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
                         textField2.setText(account.getLogin());
                         passwordField1.setText(account.getPassword());
                         for (BTProject project : account.getProjects()) {
-                            projectsModel.addElement(new SelectableItem<>(project, SelectableItem.getCheckBox(project)));
+                            projectsModel.addElement(new SelectableItem<BTProject>(project, SelectableItem.getCheckBox(project)));
                         }
                     }
                     projectsList.setModel(projectsModel);
@@ -141,8 +141,11 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
                 super.mouseClicked(e);
             }
         });
-        accountsUIList.registerKeyboardAction(e -> {
-            removeCurrentListElement();
+        accountsUIList.registerKeyboardAction(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                removeCurrentListElement();
+            }
         }, KeyStroke.getKeyStroke(KeyEvent.VK_DELETE, 0), JComponent.WHEN_FOCUSED);
         textField1.getDocument().addDocumentListener(changeListener);
         textField2.getDocument().addDocumentListener(changeListener);
@@ -158,11 +161,11 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
                     BTAccount account = (BTAccount) accountsUIList.getModel().getElementAt(pos);
                     projectsList.setModel(projectsModel);
                     List<YouTrackProject> projects = client.getProjects();
-                    List<BTProject> mustBeAdded = new ArrayList<>();
+                    List<BTProject> mustBeAdded = new ArrayList<BTProject>();
                     for (YouTrackProject project : projects) {
                         BTProject wrapper = new BTProject(account, project.getProjectFullName(), project.getProjectShortName());
                         if (!projectsModel.contains(wrapper)) {
-                            projectsModel.addElement(new SelectableItem<>(wrapper));
+                            projectsModel.addElement(new SelectableItem<BTProject>(wrapper));
                             mustBeAdded.add(wrapper);
                         }
                     }
@@ -210,7 +213,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
     }
 
     private static List<BTAccount> getAccountsFromUI() {
-        List<BTAccount> accounts = new ArrayList<>(model.size());
+        List<BTAccount> accounts = new ArrayList<BTAccount>(model.size());
         for (int i = 0; i < model.size(); i++) {
             accounts.add(model.get(i));
         }

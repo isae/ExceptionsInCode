@@ -24,15 +24,15 @@ import java.util.concurrent.ConcurrentHashMap;
 public class IssuesExceptionsGutter implements TextAnnotationGutterProvider {
 
     private static final Logger logger = Logger.getInstance(IssuesExceptionsGutter.class);
-    private final Map<Integer, Integer> exceptions = new ConcurrentHashMap<>();
+    private final Map<Integer, Integer> exceptions = new ConcurrentHashMap<Integer, Integer>();
 
-    private final List<AnAction> popupActions = new ArrayList<>();
+    private final List<AnAction> popupActions = new ArrayList<AnAction>();
 
     public IssuesExceptionsGutter() {
-        logger.warn("_______________________________________");
-        popupActions.add(new DumbAction());
-        popupActions.add(new DumbAction2());
-        popupActions.add(new TextBoxes());
+      //  logger.warn("_______________________________________");
+       // popupActions.add(new DumbAction());
+      //  popupActions.add(new DumbAction2());
+       // popupActions.add(new TextBoxes());
     }
 
 

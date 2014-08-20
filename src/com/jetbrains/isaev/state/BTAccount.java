@@ -77,7 +77,7 @@ public class BTAccount{
 
     public List<BTProject> getProjects() {
         if (projects == null) {
-            projects = new ArrayList<>(0);
+            projects = new ArrayList<BTProject>(0);
         }
         return projects;
     }

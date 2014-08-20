@@ -89,8 +89,8 @@ public class StacktraceProvider {
     public Map<Integer, ParsedException> parseAllExceptions(String text) {
         setHeadlineMatcher(text);
         setTraceMatcher(text);
-        List<ParsedException> result = new ArrayList<>();
-        List<Integer> headPositions = new ArrayList<>();
+        List<ParsedException> result = new ArrayList<ParsedException>();
+        List<Integer> headPositions = new ArrayList<Integer>();
         while (headlineMatcher.find()) {
             headPositions.add(headlineMatcher.start());
             ParsedException tmp = new ParsedException(headlineMatcher.group(1), headlineMatcher.group(4));
@@ -99,7 +99,7 @@ public class StacktraceProvider {
         for (int i = 0; i < headPositions.size(); i++) {
             int next = i == headPositions.size() - 1 ? text.length() : headPositions.get(i + 1);
             Matcher m = traceMatcher.region(headPositions.get(i), next);
-            List<StackTraceElement> stackTrace = new ArrayList<>();
+            List<StackTraceElement> stackTrace = new ArrayList<StackTraceElement>();
             String sourceFile = null;
             while (m.find()) {
                 String className = m.group(1);
@@ -135,7 +135,7 @@ public class StacktraceProvider {
                 }
             }
             if (stackTrace.size() > 0) {
-                Map<Integer, StackTraceElement> elementMap = new HashMap<>();
+                Map<Integer, StackTraceElement> elementMap = new HashMap<Integer, StackTraceElement>();
                 for (StackTraceElement el : stackTrace) {
                     elementMap.put(el.hashCode(), el);
                 }
@@ -149,7 +149,9 @@ public class StacktraceProvider {
                 iter.remove();
             }
         }
-        return result.stream().collect(Collectors.toMap(ParsedException::hashCode, el -> el, (e1, e2) -> e1));
+        Map<Integer, ParsedException> finalResult = new HashMap<Integer, ParsedException>();
+        for (ParsedException exception : result) finalResult.put(exception.hashCode(), exception);
+        return finalResult;
     }
 
     private String removeAnonimousMarks(String className) {
@@ -163,7 +165,7 @@ public class StacktraceProvider {
     public List<ParsedException> parseAllTestExceptions(String text) {
         setHeadlineMatcher(text);
         setTraceMatcher(text);
-        List<ParsedException> result = new ArrayList<>();
+        List<ParsedException> result = new ArrayList<ParsedException>();
       /*  List<Integer> headPositions = new ArrayList<>();
         while (headlineMatcher.find()) {
             headPositions.add(headlineMatcher.start());

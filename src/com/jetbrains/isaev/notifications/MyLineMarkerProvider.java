@@ -42,7 +42,7 @@ public class MyLineMarkerProvider extends IconLineMarkerProvider implements Dumb
     }
 
     private <T extends PsiElement> List<T> getAllChildByClass(PsiElement element, Class<T> typeToken) {
-        List<T> list = new LinkedList<>();
+        List<T> list = new LinkedList<T>();
         for (PsiElement elem : element.getChildren()) {
             list.addAll(getAllChildByClass(elem, typeToken));
         }
@@ -67,7 +67,7 @@ public class MyLineMarkerProvider extends IconLineMarkerProvider implements Dumb
             return;
         }
 
-        Set<PsiMethod> methods = new HashSet<>();
+        Set<PsiMethod> methods = new HashSet<PsiMethod>();
         PsiClass currentClass = null;
         for (PsiElement element : elements) {
             if (element instanceof PsiMethod) methods.add((PsiMethod) element);
@@ -76,7 +76,8 @@ public class MyLineMarkerProvider extends IconLineMarkerProvider implements Dumb
         if (currentClass != null) {
             String currentClassName = currentClass.getQualifiedName();
             List<StackTraceElement> elementList = dao.getClassNameToSTElement(currentClassName);
-            Set<BTIssue> issues = elementList.stream().map(e -> e.getException().getIssue()).collect(Collectors.toSet());
+            Set<BTIssue> issues = new HashSet<BTIssue>();
+            for (StackTraceElement element : elementList) issues.add(element.getException().getIssue());
             if (!issues.isEmpty()) {
                 LineMarkerInfo tmp = new ReportedExceptionLineMarkerInfo(currentClass, issues);
                 result.add(tmp);
@@ -87,23 +88,19 @@ public class MyLineMarkerProvider extends IconLineMarkerProvider implements Dumb
     }
 
     private void markMethods(Set<PsiMethod> methods, Collection<LineMarkerInfo> result) {
-        Map<String, PsiMethod> mustBeUpdated = new HashMap<>();
-        Map<Long, StackTraceElement> res = new HashMap<>();
         for (PsiMethod method : methods) {
             addMethodMarkers(method, result);
-            //  LineMarkerInfo info = getLineMarkerInfo(method);
-            //if (info != null) result.add(info);
         }
     }
 
     private void checkContainer(Map<PsiElement, HashSet<BTIssue>> target, PsiElement toCheck) {
-        if (!target.containsKey(toCheck)) target.put(toCheck, new HashSet<>());
+        if (!target.containsKey(toCheck)) target.put(toCheck, new HashSet<BTIssue>());
     }
 
     private void addMethodMarkers(PsiMethod method, Collection<LineMarkerInfo> result) {
         PsiClass clazz = method.getContainingClass();
-        Map<PsiElement, HashSet<BTIssue>> tempResult = new HashMap<>();
-        Map<StackTraceElement, Boolean> toAdd = new HashMap<>();
+        Map<PsiElement, HashSet<BTIssue>> tempResult = new HashMap<PsiElement, HashSet<BTIssue>>();
+        Map<StackTraceElement, Boolean> toAdd = new HashMap<StackTraceElement, Boolean>();
         PsiJavaFile file = (PsiJavaFile) clazz.getContainingFile();
         String className = file.getPackageName() + "." + clazz.getName();
         String methodName = method.getName();
@@ -130,7 +127,7 @@ public class MyLineMarkerProvider extends IconLineMarkerProvider implements Dumb
                     }
                 }
             }
-            Set<BTIssue> tmp = new HashSet<>();
+            Set<BTIssue> tmp = new HashSet<BTIssue>();
             for (StackTraceElement element : elements) {
                 if (toAdd.get(element) == null) {
                     tmp.add(element.getException().getIssue());

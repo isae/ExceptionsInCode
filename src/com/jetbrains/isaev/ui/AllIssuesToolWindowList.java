@@ -33,7 +33,7 @@ public class AllIssuesToolWindowList extends JBList {
     private static IssuesDAO issuesDAO = GlobalVariables.dao;
     Logger logger = Logger.getInstance(AllIssuesToolWindowList.class);
     AllIssuesToolWindowList thisList;
-    private DefaultListModel<BTIssue> model = new DefaultListModel<>();
+    private DefaultListModel<BTIssue> model = new DefaultListModel<BTIssue>();
     private DoubleClickListener doubleListener = new DoubleClickListener() {
         @Override
         protected boolean onDoubleClick(MouseEvent event) {
@@ -41,11 +41,11 @@ public class AllIssuesToolWindowList extends JBList {
             BTIssue issue = model.get(index);
 
             //Messages.showInfoMessage(GlobalVariables.project, issue.getNumber()+" "+issue.getExceptions().size(), "Title");
-            java.util.List<StackTraceElement> stElements = new ArrayList<>();
-            issue.getExceptions().values().stream().forEach((ex) -> {
-                stElements.addAll(ex.getStacktrace().values().stream().collect(Collectors.toList()));
-            });
-            Map<String, Pair<PsiJavaFile, StackTraceElement>> files = new HashMap<>();
+            java.util.List<StackTraceElement> stElements = new ArrayList<StackTraceElement>();
+            for (ParsedException ex : issue.getExceptions().values()) {
+                stElements.addAll(new ArrayList<StackTraceElement>(ex.getStacktrace().values()));
+            }
+            Map<String, Pair<PsiJavaFile, StackTraceElement>> files = new HashMap<String, Pair<PsiJavaFile, StackTraceElement>>();
             for (StackTraceElement element : stElements) {
                 for (PsiFile file : FilenameIndex.getFilesByName(GlobalVariables.project, element.getFileName(), GlobalSearchScope.projectScope(GlobalVariables.project))) {
                     if (file instanceof PsiJavaFile) {
@@ -53,12 +53,12 @@ public class AllIssuesToolWindowList extends JBList {
                         String className = ((PsiJavaFile) file).getClasses()[0].getQualifiedName();
                         String className2 = element.getDeclaringClass();
                         if (className.equals(className2)) {
-                            files.put(file.getName(), new Pair<>((PsiJavaFile) file, element));
+                            files.put(file.getName(), new Pair<PsiJavaFile, StackTraceElement>((PsiJavaFile) file, element));
                         }
                     }
                 }
             }
-            JBList links = new JBList(files.values());
+            final JBList links = new JBList(files.values());
             links.setCellRenderer(new ListCellRendererWrapper<Pair<PsiJavaFile, StackTraceElement>>() {
 
                 @Override
@@ -67,13 +67,17 @@ public class AllIssuesToolWindowList extends JBList {
                 }
             });
 
-            JBPopupFactory.getInstance().createListPopupBuilder(links).setItemChoosenCallback(() -> {
-                Pair<PsiJavaFile, StackTraceElement> file = (Pair<PsiJavaFile, StackTraceElement>) links.getSelectedValue();
-                PsiClass clazz = file.getFirst().getClasses()[0];
-                for (PsiMethod method : clazz.findMethodsByName(file.getSecond().getMethodName(), false)) {
-                    NavigationUtil.activateFileWithPsiElement(method);
+            JBPopupFactory.getInstance().createListPopupBuilder(links).setItemChoosenCallback(new Runnable() {
+                @Override
+                public void run() {
+
+                    Pair<PsiJavaFile, StackTraceElement> file = (Pair<PsiJavaFile, StackTraceElement>) links.getSelectedValue();
+                    PsiClass clazz = file.getFirst().getClasses()[0];
+                    for (PsiMethod method : clazz.findMethodsByName(file.getSecond().getMethodName(), false)) {
+                        NavigationUtil.activateFileWithPsiElement(method);
+                    }
+                    NavigationUtil.activateFileWithPsiElement(clazz);
                 }
-                NavigationUtil.activateFileWithPsiElement(clazz);
             }).createPopup().showCenteredInCurrentWindow(GlobalVariables.project);
             return true;
         }
@@ -82,7 +86,7 @@ public class AllIssuesToolWindowList extends JBList {
     public AllIssuesToolWindowList() {
         super();
         thisList = this;
-        issuesDAO.getAllIssuesFullState().forEach(model::addElement);
+        for (BTIssue issue : issuesDAO.getAllIssuesFullState()) model.addElement(issue);
         new ListSpeedSearch(this);
         setModel(model);
         doubleListener.installOn(this);

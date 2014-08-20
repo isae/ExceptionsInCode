@@ -44,7 +44,7 @@ public class ReportedExceptionLineMarkerInfo extends MergeableLineMarkerInfo<Psi
         super(range, range.getTextRange(), IconProvider.getIcon(IconProvider.IconRef.WARN), Pass.UPDATE_OVERRIDEN_MARKERS, getMarkerTooltip(issueSet), getNaviHandler(issueSet), GutterIconRenderer.Alignment.RIGHT);
     }
 
-    private static GutterIconNavigationHandler<PsiElement> getNaviHandler(Set<BTIssue> issueSet) {
+    private static GutterIconNavigationHandler<PsiElement> getNaviHandler(final Set<BTIssue> issueSet) {
         return new GutterIconNavigationHandler<PsiElement>() {
             @Override
             public void navigate(MouseEvent e, PsiElement elt) {

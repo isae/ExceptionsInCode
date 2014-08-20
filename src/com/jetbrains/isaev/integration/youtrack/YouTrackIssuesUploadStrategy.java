@@ -52,7 +52,7 @@ public class YouTrackIssuesUploadStrategy extends IssuesUploadStrategy {
         } catch (Exception e) {
             if (max == 1) {
                 if (errors != null) errors.add(after + 1);
-                return new ArrayList<>(0);
+                return new ArrayList<YouTrackIssue>(0);
             }
             int mid = max / 2;
             result = getIssuesAvoidBugged(filter, after, mid, updatedAfter, errors, wikifyDescription);
@@ -91,16 +91,18 @@ public class YouTrackIssuesUploadStrategy extends IssuesUploadStrategy {
         indicator.setFraction(0.05);
         indicator.setText(String.valueOf(issuesNumber) + " issues must be proceed");
         double fractionInc = 0.7d / (issuesNumber / ISSUES_AT_ONE_TIME + 1);
-        List<Integer> errors = new ArrayList<>();
-        List<BTIssue> parsedIssues = new ArrayList<>();
+        List<Integer> errors = new ArrayList<Integer>();
+        List<BTIssue> parsedIssues = new ArrayList<BTIssue>();
         for (int after = 0; after < issuesNumber; after += ISSUES_AT_ONE_TIME) {
             List<YouTrackIssue> issues = getIssuesAvoidBugged(STATE, after, ISSUES_AT_ONE_TIME, from, errors, false);
-            List<YouTrackIssue> wikifiedIssues = getIssuesAvoidBugged(STATE, after, ISSUES_AT_ONE_TIME, from, errors, true);
-            Map<String, YouTrackIssue> mappedWikiIssues = wikifiedIssues.stream().collect(Collectors.toMap(YouTrackIssue::getId, Function.<YouTrackIssue>identity()));
-            issues.forEach((is) -> {
+            List<YouTrackIssue> wikifiedIssues = getIssuesAvoidBugged(STATE, after, ISSUES_AT_ONE_TIME, from, errors, true);Map<String, YouTrackIssue> mappedWikiIssues = new HashMap<String, YouTrackIssue>();
+            for(YouTrackIssue issue: wikifiedIssues){
+                mappedWikiIssues.put(issue.getId(),issue);
+            }
+            for(YouTrackIssue is:issues){
                 BTIssue issue = processIssue(is, mappedWikiIssues);
                 if (issue != null) parsedIssues.add(issue);
-            });
+            }
             indicator.setFraction(indicator.getFraction() + fractionInc);
             indicator.setText("There are " + parsedIssues.size() + " issues with exceptions were founded so far");
         }

@@ -41,18 +41,21 @@ public class BTIssueShowDialog extends DialogWrapper {
         descriptionField.setText(item.getDescription());
         init();
         String domain = item.getProject().getBtAccount().getDomainName();
-        String tmp = domain + "/issue/" + item.getNumber();
+        final String tmp = domain + "/issue/" + item.getNumber();
         button1.setText(tmp);
-        button1.addActionListener(e -> {
-            URI uri = null;
-            try {
-                uri = new URI(tmp);
-            } catch (URISyntaxException e1) {
-                e1.printStackTrace();
-            }
-            final URI finalUri = uri;
+        button1.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                URI uri = null;
+                try {
+                    uri = new URI(tmp);
+                } catch (URISyntaxException e1) {
+                    e1.printStackTrace();
+                }
+                final URI finalUri = uri;
 
-            open(finalUri);
+                open(finalUri);
+            }
         });
         //  setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
         //   addWindowListener(new WindowAdapter() {

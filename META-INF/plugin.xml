@@ -37,7 +37,7 @@
 
     <application-components>
         <!-- Add your application components here -->
-        <component>
+        <component >
             <implementation-class>com.jetbrains.isaev.ui.MyPluginRegistration</implementation-class>
         </component>
     </application-components>

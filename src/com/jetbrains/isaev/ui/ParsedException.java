@@ -23,7 +23,7 @@ public class ParsedException {
     private BTIssue issue;
     private int issueID;
     @NotNull
-    private Map<Integer, StackTraceElement> stacktrace = new HashMap<>();
+    private Map<Integer, StackTraceElement> stacktrace = new HashMap<Integer, StackTraceElement>();
     private long exceptionID;
     private static Comparator<? super StackTraceElement> stacktraceOrderComparator = new Comparator<StackTraceElement>() {
         @Override
@@ -98,7 +98,10 @@ public class ParsedException {
      * must not be used before object persisted to db
      */
     public void orderStacktrace() {
-        StackTraceElement[] elements = stacktrace.values().stream().sorted(stacktraceOrderComparator).toArray(StackTraceElement[]::new);
+
+        StackTraceElement[] elements = new StackTraceElement[stacktrace.values().size()];
+        stacktrace.values().toArray(elements);
+        Arrays.sort(elements, stacktraceOrderComparator);
         for (int i = 0; i < elements.length; i++) {
             if (i > 0) {
                 elements[i].setPrev(elements[i - 1]);

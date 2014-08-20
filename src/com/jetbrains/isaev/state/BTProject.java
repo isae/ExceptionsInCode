@@ -20,7 +20,7 @@ public class BTProject {
 
     private BTAccount btAccount;
 
-    private List<BTIssue> issues = new ArrayList<>();
+    private List<BTIssue> issues = new ArrayList<BTIssue>();
     private Timestamp lastUpdated;
     private boolean mustBeUpdated = false;
     private int projectID;

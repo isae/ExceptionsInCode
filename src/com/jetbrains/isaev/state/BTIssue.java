@@ -21,7 +21,7 @@ public class BTIssue {
     private BTProject project;
     private int projectID;
     private int issueID;
-    private Map<Integer, ParsedException> exceptions = new HashMap<>();
+    private Map<Integer, ParsedException> exceptions = new HashMap<Integer, ParsedException>();
 
 
     public BTIssue(int issueID, String title, String descr , Timestamp lastUpdated, String number, int projectID) {
@@ -141,7 +141,7 @@ public class BTIssue {
     }
 
     public Map<Integer, ParsedException> getExceptions() {
-        if (exceptions == null) exceptions = new HashMap<>();
+        if (exceptions == null) exceptions = new HashMap<Integer, ParsedException>();
         return exceptions;
     }
 
