@@ -24,7 +24,6 @@ import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Created by Ilya.Isaev on 06.08.2014.
@@ -33,12 +32,12 @@ public class AllIssuesToolWindowList extends JBList {
     private static IssuesDAO issuesDAO = GlobalVariables.dao;
     Logger logger = Logger.getInstance(AllIssuesToolWindowList.class);
     AllIssuesToolWindowList thisList;
-    private DefaultListModel<BTIssue> model = new DefaultListModel<BTIssue>();
+    private DefaultListModel model = new DefaultListModel();
     private DoubleClickListener doubleListener = new DoubleClickListener() {
         @Override
         protected boolean onDoubleClick(MouseEvent event) {
             int index = thisList.locationToIndex(event.getPoint());
-            BTIssue issue = model.get(index);
+            BTIssue issue = (BTIssue) model.get(index);
 
             //Messages.showInfoMessage(GlobalVariables.project, issue.getNumber()+" "+issue.getExceptions().size(), "Title");
             java.util.List<StackTraceElement> stElements = new ArrayList<StackTraceElement>();

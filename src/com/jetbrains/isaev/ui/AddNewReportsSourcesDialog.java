@@ -41,9 +41,9 @@ import java.util.Set;
 public class AddNewReportsSourcesDialog extends DialogWrapper {
     //static int lastSelectedPos = -1;
     private static YouTrackClientFactory clientFactory;
-    private static DefaultListModel<BTAccount> model = new DefaultListModel<BTAccount>();
-    private static DefaultListModel<SelectableItem<BTProject>> projectsModel = new DefaultListModel<SelectableItem<BTProject>>();
-    private static DefaultComboBoxModel<BTAccountType> accountTypeModel = new DefaultComboBoxModel<BTAccountType>();
+    private static DefaultListModel model = new DefaultListModel();
+    private static DefaultListModel projectsModel = new DefaultListModel();
+    private static DefaultComboBoxModel accountTypeModel = new DefaultComboBoxModel();
 
     static {
         for (BTAccountType type : BTAccountType.values()) accountTypeModel.addElement(type);
@@ -128,7 +128,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
                 if (tmp != -1) {
                     projectsModel.clear();
                     if (model.size() > 0) {
-                        BTAccount account = model.get(accountsUIList.getSelectedIndex());
+                        BTAccount account = (BTAccount) model.get(accountsUIList.getSelectedIndex());
                         textField1.setText(account.getDomainName());
                         textField2.setText(account.getLogin());
                         passwordField1.setText(account.getPassword());
@@ -180,7 +180,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
                 int pos = accountsUIList.getSelectedIndex();
                 if (pos != -1) {
                     applyAction.actionPerformed(e);
-                    BTAccount account = model.getElementAt(pos);
+                    BTAccount account = (BTAccount) model.getElementAt(pos);
                     List<BTProject> projects = account.getProjects();
                     for (BTProject project : projects) {
                         if (project.isMustBeUpdated()) {
@@ -215,7 +215,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
     private static List<BTAccount> getAccountsFromUI() {
         List<BTAccount> accounts = new ArrayList<BTAccount>(model.size());
         for (int i = 0; i < model.size(); i++) {
-            accounts.add(model.get(i));
+            accounts.add((BTAccount) model.get(i));
         }
 
         return accounts;
@@ -232,7 +232,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
         prevSelectedIndex = -1;
         int pos = accountsUIList.getSelectedIndex();
         if (pos != -1) {
-            BTAccount acc = model.get(pos);
+            BTAccount acc = (BTAccount) model.get(pos);
             if (acc.getAccountID() != 0) mustBeDeleted.add(acc);
             model.remove(pos);
         }
@@ -241,7 +241,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
     private void saveCurrentAccount() {
         int pos = accountsUIList.getSelectedIndex();
         if (pos != -1) {
-            BTAccount account = model.get(pos);
+            BTAccount account = (BTAccount) model.get(pos);
             updateFieldsFromBTAccount(account);
         }
     }

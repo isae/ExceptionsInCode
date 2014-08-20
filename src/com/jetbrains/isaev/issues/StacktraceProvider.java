@@ -13,7 +13,6 @@ import org.apache.velocity.runtime.directive.Parse;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * User: Xottab

@@ -36,7 +36,7 @@ public class YouTrackClient {
             String responseBody = response.getEntity(String.class);
             if (responseBody != null)
                 throw new RuntimeException(message + "\nRESPONSE CODE: " + response.getStatus() + " "
-                        + response.getClientResponseStatus() + "\nRESPONSE DATA:" + responseBody);
+                        + "\nRESPONSE DATA:" + responseBody);
         }
         return response;
     }

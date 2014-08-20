@@ -12,10 +12,11 @@ import java.awt.event.ActionListener;
  * User: Xottab
  * Date: 29.07.2014
  */
-public class ProjectsChooseListRenderer implements ListCellRenderer<SelectableItem<BTProject>> {
+public class ProjectsChooseListRenderer implements ListCellRenderer {
 
     @Override
-    public Component getListCellRendererComponent(JList<? extends SelectableItem<BTProject>> list, SelectableItem<BTProject> value, int index, boolean isSelected, boolean cellHasFocus) {
+    public Component getListCellRendererComponent(JList list, Object val, int index, boolean isSelected, boolean cellHasFocus) {
+        SelectableItem<BTProject> value = (SelectableItem<BTProject>) val;
         if (value.checkbox == null) {
             final JBCheckBox checkBox = new JBCheckBox(value.value.getFullName());
             value.checkbox = checkBox;
