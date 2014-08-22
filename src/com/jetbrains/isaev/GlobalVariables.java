@@ -1,10 +1,13 @@
 package com.jetbrains.isaev;
 
+import com.intellij.openapi.application.AccessToken;
+import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.ex.EditorGutterComponentEx;
 import com.intellij.openapi.fileEditor.EditorDataProvider;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.util.Computable;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.jetbrains.isaev.dao.IssuesDAO;
 import org.jetbrains.annotations.NotNull;
@@ -12,6 +15,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.concurrent.Callable;
 
 /**
  * Created by Ilya.Isaev on 01.08.2014.
@@ -24,26 +28,21 @@ public class GlobalVariables {
 
     public GlobalVariables(Project project) {
         GlobalVariables.project = project;
-        FileEditorManager.getInstance(project).registerExtraEditorDataProvider(new EditorDataProvider() {
-            @Nullable
-            @Override
-            public Object getData(@NotNull String s, @NotNull Editor editor, @NotNull VirtualFile virtualFile) {
-                EditorGutterComponentEx comp = (EditorGutterComponentEx) editor.getGutter();
-                comp.addMouseListener(new MouseAdapter() {
-                    @Override
-                    public void mouseClicked(MouseEvent e) {
-                        System.out.println("GIVE ME MANA SOOOKA");
-                    }
-                });
-                return null;
-            }
-        }, null);
         GlobalVariables.instance = this;
     }
 
     public GlobalVariables(Project project, IssuesDAO instance) {
         this(project);
         GlobalVariables.dao = instance;
+    }
+
+    public static Editor getSelectedEditor() {
+        return (Editor) ApplicationManager.getApplication().runReadAction(new Computable<Object>() {
+            @Override
+            public Object compute() {
+                return FileEditorManager.getInstance(project).getSelectedTextEditor();
+            }
+        });
     }
 
     public IssuesDAO getDao() {

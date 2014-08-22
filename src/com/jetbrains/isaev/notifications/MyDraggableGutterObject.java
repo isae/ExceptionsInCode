@@ -1,8 +1,17 @@
 package com.jetbrains.isaev.notifications;
 
+import com.intellij.codeHighlighting.Pass;
+import com.intellij.codeInsight.daemon.impl.FileStatusMap;
+import com.intellij.codeInsight.daemon.impl.SlowLineMarkersPass;
+import com.intellij.codeInsight.daemon.impl.SlowLineMarkersPassFactory;
+import com.intellij.openapi.editor.Document;
+import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.markup.GutterDraggableObject;
+import com.intellij.openapi.progress.EmptyProgressIndicator;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
+import com.intellij.openapi.util.TextRange;
 import com.intellij.openapi.vfs.VirtualFile;
+import com.jetbrains.isaev.GlobalVariables;
 
 import java.awt.*;
 
@@ -10,6 +19,14 @@ import java.awt.*;
  * Created by Ilya.Isaev on 21.08.2014.
  */
 public class MyDraggableGutterObject implements GutterDraggableObject {
+    private final ReportedExceptionLineMarkerInfo info;
+    private static FileStatusMap fileStatus = new FileStatusMap(GlobalVariables.getInstance().getProject());
+
+
+    public MyDraggableGutterObject(ReportedExceptionLineMarkerInfo info) {
+        this.info = info;
+    }
+
     /**
      * Called when the icon is dropped over the specified line.
      *
@@ -20,6 +37,8 @@ public class MyDraggableGutterObject implements GutterDraggableObject {
      */
     @Override
     public boolean copy(int line, VirtualFile file) {
+        info.updateUI(line);
+
         return true;
     }
 

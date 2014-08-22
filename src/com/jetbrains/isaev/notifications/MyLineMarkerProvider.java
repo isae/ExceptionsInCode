@@ -33,6 +33,18 @@ public class MyLineMarkerProvider extends IconLineMarkerProvider implements Dumb
     private static final Logger logger = Logger.getInstance(MyLineMarkerProvider.class);
     private IssuesDAO dao = GlobalVariables.getInstance().dao;
 
+    @Nullable
+    @Override
+    public LineMarkerInfo getLineMarkerInfo(@NotNull PsiElement element) {
+        //logger.warn("requested lineMarkerInfo " + element);
+        return null;
+    }
+
+
+   /* private static int positionToLine(int position) {
+        return editor.offsetToLogicalPosition(position).line;
+    }*/
+
     private static PsiElement getCorrectPsiAnchor(PsiMethod method) {
         PsiElement range;
         if (method.isPhysical()) {
@@ -77,11 +89,6 @@ public class MyLineMarkerProvider extends IconLineMarkerProvider implements Dumb
         return list;
     }
 
-    @Nullable
-    @Override
-    public LineMarkerInfo getLineMarkerInfo(@NotNull PsiElement element) {
-        return null;
-    }
 
     @Override
     public void collectSlowLineMarkers(@NotNull List<PsiElement> elements, @NotNull Collection<LineMarkerInfo> result) {
@@ -94,24 +101,25 @@ public class MyLineMarkerProvider extends IconLineMarkerProvider implements Dumb
 
         Set<PsiMethod> methods = new HashSet<PsiMethod>();
         PsiClass currentClass = null;
-        logger.warn("____________________\n");
-
+        logger.warn("slow ____________________\n");
+        Editor ed = GlobalVariables.getSelectedEditor();
         for (PsiElement element : elements) {
-            //    logger.warn("updated gutter: " + element);
+            int lineNumber = ed.offsetToLogicalPosition(element.getTextOffset()).line;
+            logger.warn("updated gutter: " + element + " " + lineNumber);
             if (element instanceof PsiMethod) {
                 methods.add((PsiMethod) element);
-                logger.warn("methodSignature: " + getMethodSignatureString((PsiMethod) element)+" from "+element.getNode().getTextRange().getStartOffset()+" to "+element.getTextRange().getEndOffset());
+                logger.warn("methodSignature: " + getMethodSignatureString((PsiMethod) element) + " from " + element.getNode().getTextRange().getStartOffset() + " to " + element.getTextRange().getEndOffset());
             }
             if (element instanceof PsiClass) currentClass = (PsiClass) element;
         }
-        logger.warn("____________________\n");
+        logger.warn("//slow ____________________\n");
         if (currentClass != null) {
             String currentClassName = currentClass.getQualifiedName();
             List<StackTraceElement> elementList = dao.getClassNameToSTElement(currentClassName);
             Set<BTIssue> issues = new HashSet<BTIssue>();
             for (StackTraceElement element : elementList) issues.add(element.getException().getIssue());
             if (!issues.isEmpty()) {
-                LineMarkerInfo tmp = new ReportedExceptionLineMarkerInfo(currentClass.getNameIdentifier(), issues);
+                LineMarkerInfo tmp = new ReportedExceptionLineMarkerInfo(currentClass.getNameIdentifier(), issues, (PsiJavaFile) currentClass.getContainingFile());
                 result.add(tmp);
             }
             //logger.warn("Class name is: " + currentClassName);
@@ -166,9 +174,10 @@ public class MyLineMarkerProvider extends IconLineMarkerProvider implements Dumb
                 }
             }
             PsiElement range = getCorrectPsiAnchor(method);
-            if (!tmp.isEmpty()) result.add(new ReportedExceptionLineMarkerInfo(range, tmp));
+            if (!tmp.isEmpty())
+                result.add(new ReportedExceptionLineMarkerInfo(range, tmp, (PsiJavaFile) range.getContainingFile()));
             for (Map.Entry<PsiElement, HashSet<BTIssue>> entry : tempResult.entrySet()) {
-                result.add(new ReportedExceptionLineMarkerInfo(entry.getKey(), entry.getValue()));
+                result.add(new ReportedExceptionLineMarkerInfo(entry.getKey(), entry.getValue(), (PsiJavaFile) entry.getKey().getContainingFile()));
             }
         }
     }

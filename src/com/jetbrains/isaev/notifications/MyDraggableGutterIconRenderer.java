@@ -14,15 +14,17 @@ import javax.swing.*;
  * Created by Ilya.Isaev on 21.08.2014.
  */
 public class MyDraggableGutterIconRenderer extends LineMarkerInfo.LineMarkerGutterIconRenderer {
-
+    private ReportedExceptionLineMarkerInfo info;
     public MyDraggableGutterIconRenderer(@NotNull LineMarkerInfo info) {
         super(info);
+        this.info = (ReportedExceptionLineMarkerInfo) info;
     }
 
     @Nullable
     @Override
     public GutterDraggableObject getDraggableObject() {
-        return new MyDraggableGutterObject();
+        boolean f = true;
+        return new MyDraggableGutterObject(info);
     }
 
     @NotNull

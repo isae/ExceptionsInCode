@@ -53,8 +53,8 @@ public class YouTrackTest {
         }
         YouTrackCustomFieldPrototype prototype = new YouTrackCustomFieldPrototype("TestTest", YouTrackCustomFieldType.STRING, false, false, false);
         //client.putNewCustomFieldPrototype(prototype);
-       // client.attachCustomFieldToProject(proj, prototype.getName(), "Empty");
-       // proj.updateCustomFields(client);
+        // client.attachCustomFieldToProject(proj, prototype.getName(), "Empty");
+        // proj.updateCustomFields(client);
         Collection<YouTrackCustomField> fields = client.getProjectCustomFields(proj.getProjectShortName());
         List<YouTrackProject> projects = client.getProjects();
         for (YouTrackProject project : projects) {
