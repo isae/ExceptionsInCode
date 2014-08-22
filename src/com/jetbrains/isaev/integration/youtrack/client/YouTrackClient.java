@@ -45,9 +45,11 @@ public class YouTrackClient {
         if (username == null || password == null || "".equals(username) || "".equals(password)) {
             throw new RuntimeException("Failed : NULL username or password ");
         } else {
+            WebResource resource= service.path("/user/login").queryParam("login", username)
+                    .queryParam("password", password);
+            System.out.println("REQUEST IS: "+resource.toString());
             checkClientResponse(
-                    service.path("/user/login").queryParam("login", username)
-                            .queryParam("password", password).post(ClientResponse.class), 200, "Failed to login");
+                    resource.post(ClientResponse.class), 200, "Failed to login");
         }
 
         this.setPassword(password);

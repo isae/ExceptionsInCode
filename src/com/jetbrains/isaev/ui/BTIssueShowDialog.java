@@ -33,7 +33,7 @@ public class BTIssueShowDialog extends DialogWrapper {
     }
 
     public BTIssueShowDialog(final BTIssue item) {
-        super(GlobalVariables.project, false);
+        super(GlobalVariables.getInstance().project, false);
         this.item = item;
         setSize(800, 600);
         setTitle(item.getNumber());
@@ -73,7 +73,7 @@ public class BTIssueShowDialog extends DialogWrapper {
     }
 
     public BTIssueShowDialog() {
-        super(GlobalVariables.project, false);
+        super(GlobalVariables.getInstance().project, false);
     }
 
     private void onOK() {

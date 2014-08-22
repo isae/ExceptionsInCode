@@ -1,4 +1,4 @@
-package test;
+package testSrc;
 
 import com.jetbrains.isaev.dao.ZipUtils;
 

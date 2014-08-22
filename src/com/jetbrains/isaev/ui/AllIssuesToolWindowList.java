@@ -29,7 +29,8 @@ import java.util.Map;
  * Created by Ilya.Isaev on 06.08.2014.
  */
 public class AllIssuesToolWindowList extends JBList {
-    private static IssuesDAO issuesDAO = GlobalVariables.dao;
+    private static GlobalVariables vars = GlobalVariables.getInstance();
+    private static IssuesDAO issuesDAO = vars.dao;
     Logger logger = Logger.getInstance(AllIssuesToolWindowList.class);
     AllIssuesToolWindowList thisList;
     private DefaultListModel model = new DefaultListModel();
@@ -46,7 +47,7 @@ public class AllIssuesToolWindowList extends JBList {
             }
             Map<String, Pair<PsiJavaFile, StackTraceElement>> files = new HashMap<String, Pair<PsiJavaFile, StackTraceElement>>();
             for (StackTraceElement element : stElements) {
-                for (PsiFile file : FilenameIndex.getFilesByName(GlobalVariables.project, element.getFileName(), GlobalSearchScope.projectScope(GlobalVariables.project))) {
+                for (PsiFile file : FilenameIndex.getFilesByName(vars.project, element.getFileName(), GlobalSearchScope.projectScope(vars.project))) {
                     if (file instanceof PsiJavaFile) {
                         //todo check not only name but package too
                         String className = ((PsiJavaFile) file).getClasses()[0].getQualifiedName();
@@ -77,7 +78,7 @@ public class AllIssuesToolWindowList extends JBList {
                     }
                     NavigationUtil.activateFileWithPsiElement(clazz);
                 }
-            }).createPopup().showCenteredInCurrentWindow(GlobalVariables.project);
+            }).createPopup().showCenteredInCurrentWindow(vars.project);
             return true;
         }
     };

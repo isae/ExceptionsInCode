@@ -15,11 +15,11 @@ public class ProjectData {
     private static final String DB_VERSION = "exceptions_db_version";
 
     public static int getDbVersion() {
-        return Integer.parseInt(PropertiesComponent.getInstance(GlobalVariables.project).getValue(DB_VERSION, "0"));
+        return Integer.parseInt(PropertiesComponent.getInstance(GlobalVariables.getInstance().project).getValue(DB_VERSION, "0"));
     }
 
     public static void setDbVersion(int version) {
-        PropertiesComponent.getInstance(GlobalVariables.project).setValue(DB_VERSION, String.valueOf(version));
+        PropertiesComponent.getInstance(GlobalVariables.getInstance().project).setValue(DB_VERSION, String.valueOf(version));
     }
 
 

@@ -50,7 +50,7 @@ public class StacktraceProvider {
         headlinePattern = Pattern.compile(HEADLINE_PATTERN);
         tracePattern = Pattern.compile(TRACE_PATTERN);
         if (f)
-            issuesDAO = GlobalVariables.dao;
+            issuesDAO = GlobalVariables.getInstance().dao;
     }
 
     public static StacktraceProvider getInstance() {
@@ -110,7 +110,7 @@ public class StacktraceProvider {
                 PsiFile[] files;
                 try {
                     token = ApplicationManager.getApplication().acquireReadActionLock();
-                    files = FilenameIndex.getFilesByName(GlobalVariables.project, sourceFile, GlobalSearchScope.projectScope(GlobalVariables.project));
+                    files = FilenameIndex.getFilesByName(GlobalVariables.getInstance().project, sourceFile, GlobalSearchScope.projectScope(GlobalVariables.getInstance().project));
                 } finally {
                     token.finish();
                 }

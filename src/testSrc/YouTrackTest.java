@@ -1,14 +1,12 @@
-package test;
+package testSrc;
 
-import com.jetbrains.isaev.integration.youtrack.client.YouTrackClient;
-import com.jetbrains.isaev.integration.youtrack.client.YouTrackClientFactory;
-import com.jetbrains.isaev.integration.youtrack.client.YouTrackIssue;
-import com.jetbrains.isaev.integration.youtrack.client.YouTrackProject;
+import com.jetbrains.isaev.integration.youtrack.client.*;
 import com.jetbrains.isaev.issues.StacktraceProvider;
 import com.jetbrains.isaev.ui.ParsedException;
 
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -18,6 +16,7 @@ import java.util.List;
 public class YouTrackTest {
     private static final YouTrackClientFactory clientFactory = new YouTrackClientFactory();
     private static final String JETBRAINS_YOUTRACK_URL = "http://youtrack.jetbrains.com";
+    private static final String MY_YOUTRACK_URL = "http://ololo.myjetbrains.com/youtrack";
     private static PrintWriter out;
 
     public static List<YouTrackIssue> getIssuesAvoidBugged(String projectName,
@@ -33,7 +32,7 @@ public class YouTrackTest {
         } catch (Exception e) {
             if (max == 1) {
                 if (errors != null) errors.add(after + 1);
-                return new ArrayList<>(0);
+                return new ArrayList<YouTrackIssue>(0);
             }
             int mid = max / 2;
             result = getIssuesAvoidBugged(projectName, filter, after, mid, updatedAfter, client, errors);
@@ -45,10 +44,19 @@ public class YouTrackTest {
 
     public static void main(String[] args) {
 
-        YouTrackClient client = clientFactory.getClient(JETBRAINS_YOUTRACK_URL);
-        client.login("Ilya.Isaev@jetbrains.com", ".Lu85Ga");
-        List<YouTrackProject> projects = client.getProjects();
+        YouTrackClient client = clientFactory.getClient(MY_YOUTRACK_URL);
+        client.login("xottab1", "isaev123");
         YouTrackProject proj = null;
+        for (YouTrackProject project : client.getProjects()) {
+            if (project.getProjectFullName().equals("Test")) proj = project;
+            // out.println("full " + project.getProjectFullName() + " short " + project.getProjectShortName());
+        }
+        YouTrackCustomFieldPrototype prototype = new YouTrackCustomFieldPrototype("TestTest", YouTrackCustomFieldType.STRING, false, false, false);
+        //client.putNewCustomFieldPrototype(prototype);
+       // client.attachCustomFieldToProject(proj, prototype.getName(), "Empty");
+       // proj.updateCustomFields(client);
+        Collection<YouTrackCustomField> fields = client.getProjectCustomFields(proj.getProjectShortName());
+        List<YouTrackProject> projects = client.getProjects();
         for (YouTrackProject project : projects) {
             if (project.getProjectShortName().equals("IDEA")) proj = project;
             // out.println("full " + project.getProjectFullName() + " short " + project.getProjectShortName());

@@ -1,4 +1,4 @@
-package com.jetbrains.isaev.integration.youtrack;
+package com.jetbrains.isaev.integration.jira;
 
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.jetbrains.isaev.GlobalVariables;
@@ -20,13 +20,13 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
- * Created by Ilya.Isaev on 07.08.2014.
+ * Created by Ilya.Isaev on 18.08.2014.
  */
-public class YouTrackIssuesUploadStrategy extends IssuesUploadStrategy {
+public class JiraIssuesUploadStrategy extends IssuesUploadStrategy {
+
     private static final int ISSUES_AT_ONE_TIME = 1000;
     private static final java.lang.String YOUTRACK_DATE_FORMAT_STRING = "yyyy-MM-dd'T'hh:mm:ss";
-    private static final java.lang.String STATE = " %23Open %23%7BIn Progress%7D %23Fixed ";
-  //  private static final java.lang.String STATE = " %23Open %23%7BIn Progress%7D  ";
+    private static final java.lang.String STATE = " %23Open %23%7BIn Progress%7D ";
     //  private static final java.lang.String STATE = " %23%7BIn Progress%7D ";
     private static IssuesDAO dao = GlobalVariables.getInstance().dao;
     private static StacktraceProvider provider = StacktraceProvider.getInstance();
@@ -34,7 +34,7 @@ public class YouTrackIssuesUploadStrategy extends IssuesUploadStrategy {
     private static long from;
     private final YouTrackClient client;// = new YouTrackClientFactory().;
 
-    public YouTrackIssuesUploadStrategy(@NotNull BTProject project) {
+    public JiraIssuesUploadStrategy(@NotNull BTProject project) {
         super(project);
         BTAccount acc = project.getBtAccount();
         client = new YouTrackClientFactory().getClient(acc.getDomainName());
@@ -67,7 +67,7 @@ public class YouTrackIssuesUploadStrategy extends IssuesUploadStrategy {
             BTIssue is = new BTIssue();
             is.setProjectID(btProject.getProjectID());
             for (ParsedException ex : parsedExceptions.values()) ex.setIssue(is);
-            is.setDescription(mappedIssues.get(issue.getId()).getDescription().replaceAll("<script [^<]+</script>", ""));
+            is.setDescription(mappedIssues.get(issue.getId()).getDescription());
             is.setTitle(issue.getSummary());
             is.setNumber(issue.getId());
             is.setExceptions(parsedExceptions);
@@ -94,13 +94,16 @@ public class YouTrackIssuesUploadStrategy extends IssuesUploadStrategy {
         List<BTIssue> parsedIssues = new ArrayList<BTIssue>();
         for (int after = 0; after < issuesNumber; after += ISSUES_AT_ONE_TIME) {
             List<YouTrackIssue> issues = getIssuesAvoidBugged(STATE, after, ISSUES_AT_ONE_TIME, from, errors, false);
-            List<YouTrackIssue> wikifiedIssues = getIssuesAvoidBugged(STATE, after, ISSUES_AT_ONE_TIME, from, errors, true);Map<String, YouTrackIssue> mappedWikiIssues = new HashMap<String, YouTrackIssue>();
-            for(YouTrackIssue issue: wikifiedIssues){
-                mappedWikiIssues.put(issue.getId(),issue);
+            List<YouTrackIssue> wikifiedIssues = getIssuesAvoidBugged(STATE, after, ISSUES_AT_ONE_TIME, from, errors, true);
+            Map<String, YouTrackIssue> mappedWikiIssues = new HashMap<String, YouTrackIssue>();
+            for (YouTrackIssue issue : wikifiedIssues) {
+                mappedWikiIssues.put(issue.getId(), issue);
             }
-            for(YouTrackIssue is:issues){
+            // wikifiedIssues.stream().collect(Collectors.toMap(YouTrackIssue::getId, Function.<YouTrackIssue>identity()));
+            for (YouTrackIssue is : issues) {
                 BTIssue issue = processIssue(is, mappedWikiIssues);
                 if (issue != null) parsedIssues.add(issue);
+
             }
             indicator.setFraction(indicator.getFraction() + fractionInc);
             indicator.setText("There are " + parsedIssues.size() + " issues with exceptions were founded so far");

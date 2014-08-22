@@ -14,7 +14,7 @@ public abstract class IssuesUploadStrategy extends Task.Backgroundable {
     protected final BTProject btProject;
 
     public IssuesUploadStrategy(@NotNull BTProject project) {
-        super(GlobalVariables.project, "Updating issues list");
+        super(GlobalVariables.getInstance().project, "Updating issues list");
         this.btProject = project;
     }
 

@@ -49,7 +49,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
         for (BTAccountType type : BTAccountType.values()) accountTypeModel.addElement(type);
     }
 
-    private static IssuesDAO issuesDAO = GlobalVariables.dao;
+    private static IssuesDAO issuesDAO = GlobalVariables.getInstance().dao;
     DocumentListener changeListener = new DocumentListener() {
         public void changedUpdate(DocumentEvent e) {
             warn();
@@ -88,7 +88,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
     private int prevSelectedIndex = -1;
 
     public AddNewReportsSourcesDialog() {
-        super(GlobalVariables.project, false);
+        super(GlobalVariables.getInstance().project, false);
         init();
         workingPane.setVisible(false);
         comboBox1.setModel(accountTypeModel);

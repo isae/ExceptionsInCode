@@ -31,7 +31,7 @@ public class IssuesDAO {
     private static final String PATH_SEPARATOR = System.getProperty("file.separator");
     private static final String DB_NAME = "BTIssuesDB";
     private static final int CURRENT_DATABASE_VERSION = 1;
-    private static final String STORAGE_FOLDER_PATH = GlobalVariables.project.getBasePath() + PATH_SEPARATOR + ".idea" + PATH_SEPARATOR + "BTIssuesDB";
+    private static final String STORAGE_FOLDER_PATH = GlobalVariables.getInstance().project.getBasePath() + PATH_SEPARATOR + ".idea" + PATH_SEPARATOR + "BTIssuesDB";
     private static final String ACCOUNTS_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS Accounts (" +
             "accountID INT  PRIMARY KEY  AUTO_INCREMENT, " +
             "domainName VARCHAR(255) NOT NULL, " +

@@ -1,4 +1,4 @@
-package test;
+package testSrc;
 
 import java.net.URI;
 import java.net.URISyntaxException;

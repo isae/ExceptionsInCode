@@ -105,7 +105,7 @@ public class BTIssue {
     }
 
     public BTProject getProject() {
-        if(project==null) project = GlobalVariables.dao.getProject(projectID);
+        if(project==null) project = GlobalVariables.getInstance().dao.getProject(projectID);
         return project;
     }
 

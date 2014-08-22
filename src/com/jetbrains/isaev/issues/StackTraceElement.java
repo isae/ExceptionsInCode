@@ -5,6 +5,7 @@ import com.jetbrains.isaev.ui.ParsedException;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
+import java.util.Map;
 
 /**
  * Created by Ilya.Isaev on 30.07.2014.
@@ -18,9 +19,20 @@ public class StackTraceElement {
     @NotNull
     //todo some files my have same name!!
     private String fileName;
-    private int lineNumber;
+    private ParsedException exception;
+    private StackTraceElement prev;
     private StackTraceElement next;
+    private Map<String, PlacementInfo> placementInfo;
     private byte order;
+    private int lineNumber;
+    private long ID;
+    private long exceptionID;
+
+    public StackTraceElement(long stElementID, String declaringClass, String methodName, String fileName, int lineNumber, long exceptionID, int order) {
+        this(stElementID, declaringClass, methodName, fileName, lineNumber);
+        this.exceptionID = exceptionID;
+    }
+
 
     public byte getOrder() {
         return order;
@@ -30,15 +42,6 @@ public class StackTraceElement {
         this.order = order;
     }
 
-    private StackTraceElement prev;
-    private ParsedException exception;
-    private long ID;
-
-    public StackTraceElement(long stElementID, String declaringClass, String methodName, String fileName, int lineNumber, long exceptionID, int order) {
-        this(stElementID, declaringClass, methodName, fileName, lineNumber);
-        this.exceptionID = exceptionID;
-    }
-
     public long getExceptionID() {
         return exceptionID;
     }
@@ -46,8 +49,6 @@ public class StackTraceElement {
     public void setExceptionID(long exceptionID) {
         this.exceptionID = exceptionID;
     }
-
-    private long exceptionID;
 
     public long getID() {
         return ID;
@@ -119,7 +120,7 @@ public class StackTraceElement {
     }
 
     public ParsedException getException() {
-        if (exception == null) exception = GlobalVariables.dao.getException(exceptionID);
+        if (exception == null) exception = GlobalVariables.getInstance().dao.getException(exceptionID);
         return exception;
     }
 

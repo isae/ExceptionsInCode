@@ -101,7 +101,7 @@ public class BTProject {
     }
 
     public BTAccount getBtAccount() {
-        if (btAccount == null) btAccount = GlobalVariables.dao.getAccount(accountID);
+        if (btAccount == null) btAccount = GlobalVariables.getInstance().dao.getAccount(accountID);
         return btAccount;
     }
 

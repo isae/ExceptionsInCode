@@ -4,9 +4,15 @@ import com.intellij.codeInsight.daemon.LineMarkerInfo;
 import com.intellij.codeInsight.daemon.impl.IconLineMarkerProvider;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.diagnostic.Logger;
+import com.intellij.openapi.editor.Editor;
+import com.intellij.openapi.editor.EditorGutter;
+import com.intellij.openapi.editor.ex.EditorGutterComponentEx;
+import com.intellij.openapi.fileEditor.EditorDataProvider;
+import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.project.DumbAware;
 import com.intellij.openapi.project.DumbService;
 import com.intellij.psi.*;
+import com.intellij.psi.util.MethodSignature;
 import com.jetbrains.isaev.GlobalVariables;
 import com.jetbrains.isaev.dao.IssuesDAO;
 import com.jetbrains.isaev.issues.StackTraceElement;
@@ -14,6 +20,9 @@ import com.jetbrains.isaev.state.BTIssue;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.lang.reflect.Method;
 import java.util.*;
 
 /**
@@ -22,7 +31,7 @@ import java.util.*;
  */
 public class MyLineMarkerProvider extends IconLineMarkerProvider implements DumbAware {
     private static final Logger logger = Logger.getInstance(MyLineMarkerProvider.class);
-    private IssuesDAO dao = GlobalVariables.dao;
+    private IssuesDAO dao = GlobalVariables.getInstance().dao;
 
     private static PsiElement getCorrectPsiAnchor(PsiMethod method) {
         PsiElement range;
@@ -38,6 +47,22 @@ public class MyLineMarkerProvider extends IconLineMarkerProvider implements Dumb
         }
         if (range == null) range = method;
         return range;
+    }
+
+    private static String getMethodSignatureString(PsiMethod method) {
+        MethodSignature signature = method.getSignature(PsiSubstitutor.EMPTY);
+        StringBuilder s = new StringBuilder();
+        final PsiTypeParameter[] typeParameters = signature.getTypeParameters();
+        if (typeParameters.length != 0) {
+            String sep = "<";
+            for (PsiTypeParameter typeParameter : typeParameters) {
+                s.append(sep).append(typeParameter.getName());
+                sep = ", ";
+            }
+            s.append(">");
+        }
+        s.append(signature.getName()).append("(").append(Arrays.asList(signature.getParameterTypes())).append(")");
+        return s.toString();
     }
 
     private <T extends PsiElement> List<T> getAllChildByClass(PsiElement element, Class<T> typeToken) {
@@ -62,23 +87,31 @@ public class MyLineMarkerProvider extends IconLineMarkerProvider implements Dumb
     public void collectSlowLineMarkers(@NotNull List<PsiElement> elements, @NotNull Collection<LineMarkerInfo> result) {
         ApplicationManager.getApplication().assertReadAccessAllowed();
 
+
         if (elements.isEmpty() || DumbService.getInstance(elements.get(0).getProject()).isDumb()) {
             return;
         }
 
         Set<PsiMethod> methods = new HashSet<PsiMethod>();
         PsiClass currentClass = null;
+        logger.warn("____________________\n");
+
         for (PsiElement element : elements) {
-            if (element instanceof PsiMethod) methods.add((PsiMethod) element);
+            //    logger.warn("updated gutter: " + element);
+            if (element instanceof PsiMethod) {
+                methods.add((PsiMethod) element);
+                logger.warn("methodSignature: " + getMethodSignatureString((PsiMethod) element)+" from "+element.getNode().getTextRange().getStartOffset()+" to "+element.getTextRange().getEndOffset());
+            }
             if (element instanceof PsiClass) currentClass = (PsiClass) element;
         }
+        logger.warn("____________________\n");
         if (currentClass != null) {
             String currentClassName = currentClass.getQualifiedName();
             List<StackTraceElement> elementList = dao.getClassNameToSTElement(currentClassName);
             Set<BTIssue> issues = new HashSet<BTIssue>();
             for (StackTraceElement element : elementList) issues.add(element.getException().getIssue());
             if (!issues.isEmpty()) {
-                LineMarkerInfo tmp = new ReportedExceptionLineMarkerInfo(currentClass, issues);
+                LineMarkerInfo tmp = new ReportedExceptionLineMarkerInfo(currentClass.getNameIdentifier(), issues);
                 result.add(tmp);
             }
             //logger.warn("Class name is: " + currentClassName);

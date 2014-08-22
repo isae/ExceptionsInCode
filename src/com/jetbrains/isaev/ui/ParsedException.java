@@ -46,7 +46,7 @@ public class ParsedException {
 
     @NotNull
     public BTIssue getIssue() {
-        if (issue == null) issue = GlobalVariables.dao.getIssue(issueID);
+        if (issue == null) issue = GlobalVariables.getInstance().dao.getIssue(issueID);
         if (issue == null) {
             boolean f = true;
         }

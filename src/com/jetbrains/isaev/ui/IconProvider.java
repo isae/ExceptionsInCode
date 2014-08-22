@@ -32,7 +32,9 @@ public class IconProvider {
         YOUTRACK("youtrack"),
         JIRA("jira_icon"),
         WARN("warn"),
-        JIRA_SMALL("jira_icon_small"), YOUTRACK_SMALL("youtrack_small");
+        WARN_MULTIPLE("warn_mult"),
+        JIRA_SMALL("jira_icon_small"),
+        YOUTRACK_SMALL("youtrack_small");
 
         private final String imgName;
 
