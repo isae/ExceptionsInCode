@@ -157,7 +157,9 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
                 int pos = accountsUIList.getSelectedIndex();
                 if (pos != -1) {
                     YouTrackClient client = clientFactory.getClient(textField1.getText());
-                    client.login(textField2.getText(), new String(passwordField1.getPassword()));
+                    String username = textField2.getText() == null ? "" : textField2.getText();
+                    String pass = passwordField1.getPassword() == null ? "" : new String(passwordField1.getPassword());
+                    client.login(username, pass);
                     BTAccount account = (BTAccount) accountsUIList.getModel().getElementAt(pos);
                     projectsList.setModel(projectsModel);
                     List<YouTrackProject> projects = client.getProjects();
