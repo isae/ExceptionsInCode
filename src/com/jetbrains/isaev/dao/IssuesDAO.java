@@ -30,13 +30,14 @@ public class IssuesDAO {
 
     private static final String PATH_SEPARATOR = System.getProperty("file.separator");
     private static final String DB_NAME = "BTIssuesDB";
-    private static final int CURRENT_DATABASE_VERSION = 1;
+    private static final int CURRENT_DATABASE_VERSION = 3;
     private static final String STORAGE_FOLDER_PATH = GlobalVariables.getInstance().project.getBasePath() + PATH_SEPARATOR + ".idea" + PATH_SEPARATOR + "BTIssuesDB";
     private static final String ACCOUNTS_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS Accounts (" +
             "accountID INT  PRIMARY KEY  AUTO_INCREMENT, " +
             "domainName VARCHAR(255) NOT NULL, " +
             "login VARCHAR(255) NOT NULL, " +
             "password VARCHAR(255) NOT NULL, " +
+            "asGuest BOOLEAN NOT NULL, " +
             "type TINYINT NOT NULL, " +
             "UNIQUE(domainName, login, password))";
     private static final String PROJECTS_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS Projects (" +
@@ -49,7 +50,7 @@ public class IssuesDAO {
     private static final String ISSUES_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS Issues (" +
             "issueID INT  PRIMARY KEY  AUTO_INCREMENT, " +
             "projectID INT, " +
-            "title VARCHAR(1023), " +
+            "title CLOB, " +
             "description CLOB, " +
             "number VARCHAR(63), " +
             "lastUpdated TIMESTAMP, " +
@@ -69,6 +70,7 @@ public class IssuesDAO {
             "lineNumber INT, " +
             "anOrder TINYINT, " +
             "FOREIGN KEY(exceptionID) REFERENCES Exceptions(exceptionID) ON DELETE CASCADE)";
+
     protected static final Logger logger = Logger.getInstance(IssuesDAO.class);
     private static IssuesDAO instance;
     private static boolean dbChanged = false;
@@ -133,7 +135,13 @@ public class IssuesDAO {
     }
 
     private void startMigrationToAnotherVersion(int oldVersion) {
-        //there are one version currently
+        int index = oldVersion - 1;
+        for (int i = index; i < CURRENT_DATABASE_VERSION - 1; i++) {
+            for (String command : DatabaseMigrationScripts.scripts[i]) {
+                db.update(command);
+            }
+            ProjectData.setDbVersion(i + 2);
+        }
     }
 
 
@@ -164,7 +172,7 @@ public class IssuesDAO {
             public BTIssue extractData(ResultSet rs) throws SQLException, DataAccessException {
                 boolean f = true;
                 if (rs.next()) {
-                    BTIssue issue1 = new BTIssue(rs.getInt("issueID"), rs.getString("title"), getStringFromClob(rs.getClob("description")), rs.getTimestamp("lastUpdated"), rs.getString("number"), rs.getInt("projectID"));
+                    BTIssue issue1 = new BTIssue(rs.getInt("issueID"), getStringFromClob(rs.getClob("title")), getStringFromClob(rs.getClob("description")), rs.getTimestamp("lastUpdated"), rs.getString("number"), rs.getInt("projectID"));
                     return issue1;
                 } else {
                     return null;
@@ -185,7 +193,7 @@ public class IssuesDAO {
 
             @Override
             public BTIssue mapRow(ResultSet rs, int i) throws SQLException {
-                BTIssue issue = new BTIssue(rs.getInt("issueID"), rs.getString("title"), getStringFromClob(rs.getClob("description")), rs.getTimestamp("lastUpdated"), rs.getString("number"), rs.getInt("projectID"));
+                BTIssue issue = new BTIssue(rs.getInt("issueID"), getStringFromClob(rs.getClob("title")), getStringFromClob(rs.getClob("description")), rs.getTimestamp("lastUpdated"), rs.getString("number"), rs.getInt("projectID"));
                 if (!btIssues.containsKey(issue.hashCode())) btIssues.put(issue.hashCode(), issue);
                 issue = btIssues.get(issue.hashCode());
                 ParsedException exception = new ParsedException(rs.getInt("issueID"), rs.getString("name"), rs.getLong("exceptionID"), getStringFromClob(rs.getClob("message")));
@@ -209,7 +217,7 @@ public class IssuesDAO {
         List<BTIssue> result = db.query("SELECT * FROM Issues", (Object[]) null, new RowMapper<BTIssue>() {
             @Override
             public BTIssue mapRow(ResultSet rs, int i) throws SQLException {
-                return new BTIssue(rs.getInt("issueID"), rs.getString("title"), getStringFromClob(rs.getClob("description")), rs.getTimestamp("lastUpdated"), rs.getString("number"), rs.getInt("projectID"));
+                return new BTIssue(rs.getInt("issueID"), getStringFromClob(rs.getClob("title")), getStringFromClob(rs.getClob("description")), rs.getTimestamp("lastUpdated"), rs.getString("number"), rs.getInt("projectID"));
 
             }
         });
@@ -238,7 +246,7 @@ public class IssuesDAO {
         db.query("SELECT * FROM Accounts LEFT OUTER JOIN Projects ON (Projects.accountID = Accounts.accountID)", (Object[]) null, new RowMapper<Object>() {
             @Override
             public Object mapRow(ResultSet rs, int i) throws SQLException {
-                BTAccount acc = new BTAccount(rs.getInt("accountID"), rs.getString("domainName"), rs.getString("login"), rs.getString("password"), BTAccountType.valueOf(rs.getByte("type")));
+                BTAccount acc = new BTAccount(rs.getInt("accountID"), rs.getString("domainName"), rs.getString("login"), rs.getString("password"), BTAccountType.valueOf(rs.getByte("type")), rs.getBoolean("asGuest"));
                 if (!tmp.containsKey(acc.getAccountID())) {
                     tmp.put(acc.getAccountID(), acc);
                     tmp2.put(acc.getAccountID(), new ArrayList<BTProject>());
@@ -264,7 +272,7 @@ public class IssuesDAO {
         db.query("SELECT * FROM Accounts ", (Object[]) null, new RowMapper<Object>() {
             @Override
             public Object mapRow(ResultSet rs, int i) throws SQLException {
-                BTAccount acc = new BTAccount(rs.getInt("accountID"), rs.getString("domainName"), rs.getString("login"), rs.getString("password"), BTAccountType.valueOf(rs.getByte("type")));
+                BTAccount acc = new BTAccount(rs.getInt("accountID"), rs.getString("domainName"), rs.getString("login"), rs.getString("password"), BTAccountType.valueOf(rs.getByte("type")), rs.getBoolean("asGuest"));
                 accounts.add(acc);
                 return acc;
 
@@ -290,16 +298,16 @@ public class IssuesDAO {
     public void updateAccounts(List<BTAccount> accountsFromUI) {
         for (BTAccount e : accountsFromUI) {
             if (e.getAccountID() != 0) {
-                db.update("UPDATE Accounts SET domainName = ? , login = ?, password = ?, type = ? WHERE accountID = ?", e.getDomainName(), e.getLogin(), e.getPassword(), e.getType().getType(), e.getAccountID());
+                db.update("UPDATE Accounts SET domainName = ? , login = ?, password = ?, type = ? , asGuest = ? WHERE accountID = ?", e.getDomainName(), e.getLogin(), e.getPassword(), e.getType().getType(), e.isAsGuest(), e.getAccountID());
             } else {
                 List<BTAccount> acc = db.query("SELECT * FROM Accounts WHERE domainName= ? AND login = ? AND password = ? ", new Object[]{e.getDomainName(), e.getLogin(), e.getPassword()}, new RowMapper<BTAccount>() {
                     @Override
                     public BTAccount mapRow(ResultSet rs, int i) throws SQLException {
-                        return new BTAccount(rs.getInt("accountID"), rs.getString("domainName"), rs.getString("login"), rs.getString("password"), BTAccountType.valueOf(rs.getByte("type")));
+                        return new BTAccount(rs.getInt("accountID"), rs.getString("domainName"), rs.getString("login"), rs.getString("password"), BTAccountType.valueOf(rs.getByte("type")), rs.getBoolean("asGuest"));
                     }
                 });
                 if (acc.size() == 0) {
-                    db.update("INSERT INTO Accounts ( domainName, login, password, type) values (?,?,?,?)", e.getDomainName(), e.getLogin(), e.getPassword(), e.getType().getType());
+                    db.update("INSERT INTO Accounts ( domainName, login, password, type, asGuest) values (?,?,?,?,?)", e.getDomainName(), e.getLogin(), e.getPassword(), e.getType().getType(), e.isAsGuest());
                     int tmp = db.query("SELECT accountID FROM Accounts WHERE (domainName = ? AND login = ? AND password = ? )", new Object[]{e.getDomainName(), e.getLogin(), e.getPassword()}, new ResultSetExtractor<Integer>() {
                         @Override
                         public Integer extractData(ResultSet rs) throws SQLException, DataAccessException {
@@ -358,7 +366,7 @@ public class IssuesDAO {
                 db.update("DELETE FROM Issues WHERE number = ?", issue.getNumber());
             }
 
-            db.update("INSERT INTO Issues (projectID,title,description,number,lastUpdated) values (?,?,?,?,?)", e.getProjectID(), e.getTitle(), getClobFromString(e.getDescription()), e.getNumber(), e.getLastUpdated());
+            db.update("INSERT INTO Issues (projectID,title,description,number,lastUpdated) values (?,?,?,?,?)", e.getProjectID(), getClobFromString(e.getTitle()), getClobFromString(e.getDescription()), e.getNumber(), e.getLastUpdated());
             e.setIssueID(db.query("SELECT issueID FROM Issues WHERE (projectID = ? AND number = ?)", new Object[]{e.getProjectID(), e.getNumber()}, new ResultSetExtractor<Integer>() {
                 @Override
                 public Integer extractData(ResultSet rs) throws SQLException, DataAccessException {
@@ -399,7 +407,7 @@ public class IssuesDAO {
         List<BTAccount> prs = db.query("SELECT * FROM Accounts WHERE accountID= ?", new Object[]{accountID}, new RowMapper<BTAccount>() {
             @Override
             public BTAccount mapRow(ResultSet rs, int i) throws SQLException {
-                return new BTAccount(rs.getInt("accountID"), rs.getString("domainName"), rs.getString("login"), rs.getString("password"), BTAccountType.valueOf(rs.getByte("type")));
+                return new BTAccount(rs.getInt("accountID"), rs.getString("domainName"), rs.getString("login"), rs.getString("password"), BTAccountType.valueOf(rs.getByte("type")), rs.getBoolean("asGuest"));
             }
         });
         if (prs.size() == 0)

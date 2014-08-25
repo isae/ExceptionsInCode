@@ -6,7 +6,9 @@ import com.intellij.codeInsight.daemon.MergeableLineMarkerInfo;
 import com.intellij.codeInsight.daemon.impl.MarkerType;
 import com.intellij.openapi.application.ApplicationManager;
 import com.intellij.openapi.editor.Document;
+import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.HighlighterColors;
+import com.intellij.openapi.editor.LogicalPosition;
 import com.intellij.openapi.editor.colors.EditorColorsManager;
 import com.intellij.openapi.editor.colors.EditorColorsScheme;
 import com.intellij.openapi.editor.ex.EditorGutterComponentEx;
@@ -126,28 +128,34 @@ public class ReportedExceptionLineMarkerInfo extends MergeableLineMarkerInfo<Psi
         return FileDocumentManager.getInstance().getDocument(file);
     }
 
-    public void updateUI(int line) {
+    public void updateUI(final int line) {
         if (myDisposed || ApplicationManager.getApplication().isUnitTestMode()) {
             return;
         }
         if (currentLine != line) {
             currentLine = line;
-            Document document = getDocument();
-            if (document == null) {
-                return;
-            }
-            if (myHighlighter != null) {
-                removeHighlighter();
-            }
+            final ReportedExceptionLineMarkerInfo info = this;
+            SwingUtilities.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    Document document = getDocument();
+                    if (document == null) {
+                        return;
+                    }
+                    if (myHighlighter != null) {
+                        removeHighlighter();
+                    }
 
-            MarkupModelEx markupModel;
-            markupModel = (MarkupModelEx) DocumentMarkupModel.forDocument(document, GlobalVariables.project, true);
-            myHighlighter = markupModel.addPersistentLineHighlighter(line, HighlighterLayer.SYNTAX, null);
-            if (myHighlighter == null) {
-                return;
-            }
-            myHighlighter.setGutterIconRenderer(new MyDraggableGutterIconRenderer(this));
-            myHighlighter.setEditorFilter(MarkupEditorFilterFactory.createIsNotDiffFilter());
+                    MarkupModelEx markupModel;
+                    markupModel = (MarkupModelEx) DocumentMarkupModel.forDocument(document, GlobalVariables.project, true);
+                    myHighlighter = markupModel.addPersistentLineHighlighter(line, HighlighterLayer.SYNTAX, null);
+                    if (myHighlighter == null) {
+                        return;
+                    }
+                    myHighlighter.setGutterIconRenderer(new MyDraggableGutterIconRenderer(info));
+                    myHighlighter.setEditorFilter(MarkupEditorFilterFactory.createIsNotDiffFilter());
+                }
+            });
         }
     }
 
@@ -167,4 +175,7 @@ public class ReportedExceptionLineMarkerInfo extends MergeableLineMarkerInfo<Psi
         };
     }
 
+    public void updateUI(Editor ed) {
+        updateUI(ed.offsetToLogicalPosition(getElement().getTextOffset()).line);
+    }
 }

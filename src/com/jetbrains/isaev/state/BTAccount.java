@@ -10,7 +10,8 @@ import java.util.List;
  * User: Xottab
  * Date: 25.07.2014
  */
-public class BTAccount{
+public class BTAccount {
+    private boolean asGuest;
     @NotNull
     private String domainName;
     @NotNull
@@ -23,16 +24,13 @@ public class BTAccount{
     private List<BTProject> projects;
     private int accountID;
 
-    public BTAccount(int accountID, String domainName, String login, String password, BTAccountType type) {
+    public BTAccount(int accountID, String domainName, String login, String password, BTAccountType type, boolean asGuest) {
+        this(domainName, login, password, type, asGuest);
         this.accountID = accountID;
-        this.domainName = domainName;
-        this.login = login;
-        this.password = password;
-        this.type = type;
     }
 
-    public BTAccount(@NotNull String domainName, @NotNull String login, @NotNull String password, @NotNull BTAccountType type) {
-
+    public BTAccount(@NotNull String domainName, @NotNull String login, @NotNull String password, @NotNull BTAccountType type, boolean asGuest) {
+        this.asGuest = asGuest;
         this.domainName = domainName;
         this.login = login;
         this.password = password;
@@ -113,4 +111,13 @@ public class BTAccount{
     public void setAccountID(int accountID) {
         this.accountID = accountID;
     }
+
+    public boolean isAsGuest() {
+        return asGuest;
+    }
+
+    public void setAsGuest(boolean asGuest) {
+        this.asGuest = asGuest;
+    }
+
 }

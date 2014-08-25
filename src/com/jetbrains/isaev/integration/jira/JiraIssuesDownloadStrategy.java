@@ -3,7 +3,7 @@ package com.jetbrains.isaev.integration.jira;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.jetbrains.isaev.GlobalVariables;
 import com.jetbrains.isaev.dao.IssuesDAO;
-import com.jetbrains.isaev.integration.IssuesUploadStrategy;
+import com.jetbrains.isaev.integration.IssuesDownloadStrategy;
 import com.jetbrains.isaev.integration.youtrack.client.YouTrackClient;
 import com.jetbrains.isaev.integration.youtrack.client.YouTrackClientFactory;
 import com.jetbrains.isaev.integration.youtrack.client.YouTrackIssue;
@@ -22,7 +22,7 @@ import java.util.*;
 /**
  * Created by Ilya.Isaev on 18.08.2014.
  */
-public class JiraIssuesUploadStrategy extends IssuesUploadStrategy {
+public class JiraIssuesDownloadStrategy extends IssuesDownloadStrategy {
 
     private static final int ISSUES_AT_ONE_TIME = 1000;
     private static final java.lang.String YOUTRACK_DATE_FORMAT_STRING = "yyyy-MM-dd'T'hh:mm:ss";
@@ -34,7 +34,7 @@ public class JiraIssuesUploadStrategy extends IssuesUploadStrategy {
     private static long from;
     private final YouTrackClient client;// = new YouTrackClientFactory().;
 
-    public JiraIssuesUploadStrategy(@NotNull BTProject project) {
+    public JiraIssuesDownloadStrategy(@NotNull BTProject project) {
         super(project);
         BTAccount acc = project.getBtAccount();
         client = new YouTrackClientFactory().getClient(acc.getDomainName());

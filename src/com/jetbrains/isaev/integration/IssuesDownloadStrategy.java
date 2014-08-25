@@ -9,11 +9,11 @@ import org.jetbrains.annotations.NotNull;
 /**
  * Created by Ilya.Isaev on 07.08.2014.
  */
-public abstract class IssuesUploadStrategy extends Task.Backgroundable {
+public abstract class IssuesDownloadStrategy extends Task.Backgroundable {
     @NotNull
     protected final BTProject btProject;
 
-    public IssuesUploadStrategy(@NotNull BTProject project) {
+    public IssuesDownloadStrategy(@NotNull BTProject project) {
         super(GlobalVariables.getInstance().project, "Updating issues list");
         this.btProject = project;
     }

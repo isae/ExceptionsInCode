@@ -2,18 +2,17 @@
     <id>com.jetbrains.isaev.issues.in.code</id>
 
     <name>Exceptions in code</name>
-    <version>1.0</version>
+    <version>1.1</version>
     <vendor email="support@yourcompany.com" url="http://www.yourcompany.com">YourCompany</vendor>
 
     <description><![CDATA[
         Shows containing java exceptions issues from most popular bugtracking systems in the IDEA editor
     ]]></description>
 
-    <!--<change-notes><![CDATA[
-      Add change notes here.<br>
-      <em>most HTML tags may be used</em>
+    <change-notes><![CDATA[
+      Fixed some bugs
     ]]>
-    </change-notes>-->
+    </change-notes>
 
     <!-- please see http://confluence.jetbrains.com/display/IDEADEV/Build+Number+Ranges for description -->
     <idea-version since-build="131"/>
@@ -31,8 +30,8 @@
 
         <codeInsight.lineMarkerProvider language="JAVA"
                                         implementationClass="com.jetbrains.isaev.notifications.MyLineMarkerProvider"/>
-        <documentationProvider
-                implementation="com.jetbrains.isaev.notifications.IssueDescriptionDocumentationProvider"/>
+      <!--  <documentationProvider
+                implementation="com.jetbrains.isaev.notifications.IssueDescriptionDocumentationProvider"/>-->
     </extensions>
 
     <application-components>
@@ -55,7 +54,7 @@
 
     <actions>
 
-        <group id="MyPlugin.SampleMenu" text="_Sample Menu" description="Sample menu">
+        <!--<group id="MyPlugin.SampleMenu" text="_Sample Menu" description="Sample menu">
             <add-to-group group-id="MainMenu" anchor="last"/>
             <action id="Myplugin.Textboxes" class="com.jetbrains.isaev.actions.TextBoxes" text="Text _Boxes"
                     description="A test menu item"/>
@@ -65,7 +64,7 @@
                     text="_Dumb"
                     description="A test menu item">
                 <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt z"/>
-                <!--<add-to-group group-id="com.jetbrains.isaevv.actions.MyActionGroup" anchor="first"/>-->
+                &lt;!&ndash;<add-to-group group-id="com.jetbrains.isaevv.actions.MyActionGroup" anchor="first"/>&ndash;&gt;
             </action>
 
             <action id="dumb.action"
@@ -73,10 +72,10 @@
                     text="Sort Lines"
                     description="Sort selected lines or whole file if selection is empty">
                 <keyboard-shortcut keymap="$default" first-keystroke="alt shift l"/>
-                <!--<add-to-group group-id="com.jetbrains.isaevv.actions.MyActionGroup" anchor="last"/>-->
+                &lt;!&ndash;<add-to-group group-id="com.jetbrains.isaevv.actions.MyActionGroup" anchor="last"/>&ndash;&gt;
             </action>
 
-        </group>
+        </group>-->
         <group id="exceptions.menu.open"
                popup="true"
                text="Exceptions in code"
@@ -97,7 +96,7 @@
         </group>
 
 
-        <action id="open_exceptions_gutter" class="com.jetbrains.isaev.actions.OpenExceptionsGutter"
+     <!--   <action id="open_exceptions_gutter" class="com.jetbrains.isaev.actions.OpenExceptionsGutter"
                 text="Show Exceptions"
                 description="Show known exceptions">
             <add-to-group group-id="EditorGutterPopupMenu" anchor="last"/>
@@ -105,7 +104,7 @@
         <action id="exception_clicked_action" class="com.jetbrains.isaev.actions.ExceptionClickedAction"
                 text="Exception Clicked Action">
             <add-to-group group-id="EditorPopupMenu" anchor="first"/>
-        </action>
+        </action>-->
         <!-- <group id="com.jetbrains.isaev.actions.MyActionGroup" class="com.jetbrains.isaevv.actions.MyActionGroup"
                 text="My Action Group">
 

@@ -58,27 +58,31 @@ public class AllIssuesToolWindowList extends JBList {
                     }
                 }
             }
-            final JBList links = new JBList(files.values());
-            links.setCellRenderer(new ListCellRendererWrapper<Pair<PsiJavaFile, StackTraceElement>>() {
+            if (files.size() > 0) {
+                final JBList links = new JBList(files.values());
+                links.setCellRenderer(new ListCellRendererWrapper<Pair<PsiJavaFile, StackTraceElement>>() {
 
-                @Override
-                public void customize(JList list, Pair<PsiJavaFile, StackTraceElement> value, int index, boolean selected, boolean hasFocus) {
-                    setText(value.first.getPackageName() + "." + value.first.getName());
-                }
-            });
-
-            JBPopupFactory.getInstance().createListPopupBuilder(links).setItemChoosenCallback(new Runnable() {
-                @Override
-                public void run() {
-
-                    Pair<PsiJavaFile, StackTraceElement> file = (Pair<PsiJavaFile, StackTraceElement>) links.getSelectedValue();
-                    PsiClass clazz = file.getFirst().getClasses()[0];
-                    for (PsiMethod method : clazz.findMethodsByName(file.getSecond().getMethodName(), false)) {
-                        NavigationUtil.activateFileWithPsiElement(method);
+                    @Override
+                    public void customize(JList list, Pair<PsiJavaFile, StackTraceElement> value, int index, boolean selected, boolean hasFocus) {
+                        setText(value.first.getPackageName() + "." + value.first.getName());
                     }
-                    NavigationUtil.activateFileWithPsiElement(clazz);
-                }
-            }).createPopup().showCenteredInCurrentWindow(vars.project);
+                });
+
+                JBPopupFactory.getInstance().createListPopupBuilder(links).setItemChoosenCallback(new Runnable() {
+                    @Override
+                    public void run() {
+
+                        Pair<PsiJavaFile, StackTraceElement> file = (Pair<PsiJavaFile, StackTraceElement>) links.getSelectedValue();
+                        PsiClass clazz = file.getFirst().getClasses()[0];
+                        for (PsiMethod method : clazz.findMethodsByName(file.getSecond().getMethodName(), false)) {
+                            NavigationUtil.activateFileWithPsiElement(method);
+                        }
+                        NavigationUtil.activateFileWithPsiElement(clazz);
+                    }
+                }).createPopup().showCenteredInCurrentWindow(vars.project);
+            } else {
+                new BTIssueShowDialog(issue).show();
+            }
             return true;
         }
     };

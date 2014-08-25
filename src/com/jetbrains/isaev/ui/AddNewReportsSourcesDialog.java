@@ -5,20 +5,19 @@ import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.ui.DialogWrapper;
-import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.util.SystemInfo;
+import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBList;
 import com.intellij.ui.components.labels.ActionLink;
 import com.intellij.util.IconUtil;
 import com.jetbrains.isaev.GlobalVariables;
 import com.jetbrains.isaev.dao.IssuesDAO;
-import com.jetbrains.isaev.integration.youtrack.YouTrackIssuesUploadStrategy;
+import com.jetbrains.isaev.integration.youtrack.YouTrackIssuesDownloadStrategy;
 import com.jetbrains.isaev.integration.youtrack.client.YouTrackClient;
 import com.jetbrains.isaev.integration.youtrack.client.YouTrackClientFactory;
 import com.jetbrains.isaev.integration.youtrack.client.YouTrackProject;
 import com.jetbrains.isaev.state.BTAccount;
 import com.jetbrains.isaev.state.BTAccountType;
-import com.jetbrains.isaev.state.BTIssue;
 import com.jetbrains.isaev.state.BTProject;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -30,7 +29,6 @@ import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -83,6 +81,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
     private JComboBox comboBox1;
     private ActionLink actionLink2;
     private JPanel workingPane;
+    private JBCheckBox checkBox1;
     private ApplyAction applyAction = new ApplyAction();
     private List<BTAccount> mustBeDeleted = new ArrayList<BTAccount>();
     private int prevSelectedIndex = -1;
@@ -132,6 +131,9 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
                         textField1.setText(account.getDomainName());
                         textField2.setText(account.getLogin());
                         passwordField1.setText(account.getPassword());
+                        checkBox1.setSelected(account.isAsGuest());
+                        textField2.setEnabled(!checkBox1.isSelected());
+                        passwordField1.setEnabled(!checkBox1.isSelected());
                         for (BTProject project : account.getProjects()) {
                             projectsModel.addElement(new SelectableItem<BTProject>(project, SelectableItem.getCheckBox(project)));
                         }
@@ -150,28 +152,39 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
         textField1.getDocument().addDocumentListener(changeListener);
         textField2.getDocument().addDocumentListener(changeListener);
         passwordField1.getDocument().addDocumentListener(changeListener);
+        checkBox1.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                textField2.setEnabled(!checkBox1.isSelected());
+                passwordField1.setEnabled(!checkBox1.isSelected());
+                if (!applyAction.isEnabled()) {
+                    applyAction.setEnabled(true);
+                }
+            }
+        });
 
         testButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                saveCurrentAccount();
                 int pos = accountsUIList.getSelectedIndex();
                 if (pos != -1) {
                     YouTrackClient client = clientFactory.getClient(textField1.getText());
                     String username = textField2.getText() == null ? "" : textField2.getText();
                     String pass = passwordField1.getPassword() == null ? "" : new String(passwordField1.getPassword());
-                    client.login(username, pass);
+                    if (!checkBox1.isSelected()) {
+                        client.login(username, pass);
+                    }
                     BTAccount account = (BTAccount) accountsUIList.getModel().getElementAt(pos);
                     projectsList.setModel(projectsModel);
                     List<YouTrackProject> projects = client.getProjects();
-                    List<BTProject> mustBeAdded = new ArrayList<BTProject>();
                     for (YouTrackProject project : projects) {
                         BTProject wrapper = new BTProject(account, project.getProjectFullName(), project.getProjectShortName());
-                        if (!projectsModel.contains(wrapper)) {
+                        if (!account.getProjects().contains(wrapper)) {
                             projectsModel.addElement(new SelectableItem<BTProject>(wrapper));
-                            mustBeAdded.add(wrapper);
+                            account.getProjects().add(wrapper);
                         }
                     }
-                    account.getProjects().addAll(mustBeAdded);
                 }
             }
         });
@@ -186,7 +199,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
                     List<BTProject> projects = account.getProjects();
                     for (BTProject project : projects) {
                         if (project.isMustBeUpdated()) {
-                            ProgressManager.getInstance().run(new YouTrackIssuesUploadStrategy(project));
+                            ProgressManager.getInstance().run(new YouTrackIssuesDownloadStrategy(project));
                         }
                     }
                 }
@@ -228,6 +241,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
         acc.setLogin(textField2.getText());
         acc.setPassword(new String(passwordField1.getPassword()));
         acc.setType((BTAccountType) comboBox1.getModel().getSelectedItem());
+        acc.setAsGuest(checkBox1.isSelected());
     }
 
     private void removeCurrentListElement() {
@@ -278,7 +292,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
             @Override
             public void actionPerformed(AnActionEvent e) {
                 workingPane.setVisible(true);
-                BTAccount account = new BTAccount(""/*textField1.getText()*/, ""/*textField2.getText()*/, ""/*new String(passwordField1.getPassword())*/, BTAccountType.YOUTRACK/*(BTAccountType) comboBox1.getModel().getSelectedItem()*/);
+                BTAccount account = new BTAccount(""/*textField1.getText()*/, ""/*textField2.getText()*/, ""/*new String(passwordField1.getPassword())*/, BTAccountType.YOUTRACK, false/*(BTAccountType) comboBox1.getModel().getSelectedItem()*/);
                 model.addElement(account);
             }
         });
