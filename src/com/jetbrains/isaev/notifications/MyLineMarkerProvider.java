@@ -135,7 +135,7 @@ public class MyLineMarkerProvider extends IconLineMarkerProvider implements Dumb
                 for (StackTraceElement element : elementList) issues.add(element.getException().getIssue());
                 if (!issues.isEmpty()) {
                     // if (!currentMarkers.get(hash((PsiJavaFile) currentClass.getContainingFile())).containsKey(hash(currentClass))) {
-                    ReportedExceptionLineMarkerInfo tmp = new ReportedExceptionLineMarkerInfo(currentClass.getNameIdentifier(), issues, (PsiJavaFile) currentClass.getContainingFile());
+                    ReportedExceptionLineMarkerInfo tmp = new ReportedExceptionLineMarkerInfo(currentClass.getNameIdentifier(), issues, (PsiJavaFile) currentClass.getContainingFile(), ed);
                     currentMarkers.get(hash((PsiJavaFile) currentClass.getContainingFile())).put(hash(currentClass.getNameIdentifier()), tmp);
                     tmp.updateUI(ed);
                     //  }
@@ -193,18 +193,18 @@ public class MyLineMarkerProvider extends IconLineMarkerProvider implements Dumb
                     tmp.add(element.getException().getIssue());
                 }
             }
-           // Pair<Integer, PsiElement> rangePair = getCorrectPsiAnchor(method);
+            // Pair<Integer, PsiElement> rangePair = getCorrectPsiAnchor(method);
             PsiElement range = method;//rangePair.second;
             int hash = hash(method);//rangePair.first;
             if (!tmp.isEmpty() && !currentMarkers.get(hash((PsiJavaFile) range.getContainingFile())).containsKey(hash)) {
-                ReportedExceptionLineMarkerInfo info = new ReportedExceptionLineMarkerInfo(range, tmp, (PsiJavaFile) range.getContainingFile());
+                ReportedExceptionLineMarkerInfo info = new ReportedExceptionLineMarkerInfo(range, tmp, (PsiJavaFile) range.getContainingFile(), ed);
                 currentMarkers.get(hash((PsiJavaFile) range.getContainingFile())).put(hash, info);
                 info.updateUI(ed.offsetToLogicalPosition(range.getTextOffset()).line);
             }
             for (Map.Entry<PsiMethodCallExpression, HashSet<BTIssue>> entry : tempResult.entrySet()) {
                 PsiMethodCallExpression el = entry.getKey();
                 if (!currentMarkers.get(hash((PsiJavaFile) el.getContainingFile())).containsKey(hash(el))) {
-                    ReportedExceptionLineMarkerInfo info = new ReportedExceptionLineMarkerInfo(el, entry.getValue(), (PsiJavaFile) entry.getKey().getContainingFile());
+                    ReportedExceptionLineMarkerInfo info = new ReportedExceptionLineMarkerInfo(el, entry.getValue(), (PsiJavaFile) entry.getKey().getContainingFile(), ed);
                     currentMarkers.get(hash((PsiJavaFile) el.getContainingFile())).put(hash(el), info);
                     info.updateUI(ed.offsetToLogicalPosition(range.getTextOffset()).line);
                 }

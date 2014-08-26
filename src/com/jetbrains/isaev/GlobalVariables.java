@@ -1,28 +1,8 @@
 package com.jetbrains.isaev;
-
-import com.intellij.ide.actions.OpenFileAction;
-import com.intellij.openapi.actionSystem.IdeActions;
-import com.intellij.openapi.application.AccessToken;
-import com.intellij.openapi.application.ApplicationManager;
-import com.intellij.openapi.command.impl.EditorChangeAction;
 import com.intellij.openapi.editor.Editor;
-import com.intellij.openapi.editor.actionSystem.EditorActionManager;
-import com.intellij.openapi.editor.ex.EditorGutterComponentEx;
-import com.intellij.openapi.fileChooser.actions.FileChooserAction;
-import com.intellij.openapi.fileEditor.EditorDataProvider;
 import com.intellij.openapi.fileEditor.FileEditorManager;
-import com.intellij.openapi.fileEditor.impl.http.RemoteFileEditorActionProvider;
-import com.intellij.openapi.graph.option.ConstraintManager;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.project.ProjectManager;
-import com.intellij.openapi.util.Computable;
-import com.intellij.openapi.vfs.VirtualFile;
 import com.jetbrains.isaev.dao.IssuesDAO;
-import com.sun.jna.platform.mac.MacFileUtils;
-import com.sun.jnlp.FileOpenServiceImpl;
-import javafx.application.Application;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import javax.jnlp.FileOpenService;
 import javax.swing.*;

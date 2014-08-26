@@ -9,6 +9,7 @@ import com.jetbrains.isaev.state.BTIssue;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
+import javax.swing.tree.ExpandVetoException;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.IOException;
@@ -27,7 +28,8 @@ public class BTIssueShowDialog extends DialogWrapper {
         if (Desktop.isDesktopSupported() && uri != null) {
             try {
                 Desktop.getDesktop().browse(uri);
-            } catch (IOException ignored) {
+            } catch (Exception t) {
+                t.printStackTrace();
             }
         }
     }
