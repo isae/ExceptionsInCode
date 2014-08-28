@@ -2,9 +2,13 @@ package com.jetbrains.isaev.issues;
 
 import com.jetbrains.isaev.GlobalVariables;
 import com.jetbrains.isaev.ui.ParsedException;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -22,15 +26,27 @@ public class StackTraceElement {
     private ParsedException exception;
     private StackTraceElement prev;
     private StackTraceElement next;
-    private Map<String, PlacementInfo> placementInfo;
     private byte order;
+    private boolean onPlace = false;
+    @Nullable
+    private PlacementInfo placementInfo;
     private int lineNumber;
     private long ID;
     private long exceptionID;
+    private static final ObjectMapper mapper = new ObjectMapper();
 
-    public StackTraceElement(long stElementID, String declaringClass, String methodName, String fileName, int lineNumber, long exceptionID, int order) {
+    public StackTraceElement(long stElementID, String declaringClass, String methodName, String fileName, int lineNumber, long exceptionID, byte order, boolean onPlace, String placementJson) {
         this(stElementID, declaringClass, methodName, fileName, lineNumber);
         this.exceptionID = exceptionID;
+        this.order = order;
+        this.onPlace = onPlace;
+        if (placementJson != null && placementJson.length() != 0) {
+            try {
+                placementInfo = mapper.readValue(placementJson,PlacementInfo.class);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
 
@@ -161,5 +177,32 @@ public class StackTraceElement {
 
     public void setLineNumber(int lineNumber) {
         this.lineNumber = lineNumber;
+    }
+
+    public boolean isOnPlace() {
+        return onPlace;
+    }
+
+    public void setOnPlace(boolean onPlace) {
+        this.onPlace = onPlace;
+    }
+
+    public PlacementInfo getPlacementInfo() {
+        return placementInfo;
+    }
+
+    public void setPlacementInfo(@Nullable PlacementInfo placementInfo) {
+        this.placementInfo = placementInfo;
+    }
+
+    public String getWritablePlacementInfo() {
+        String result = "";
+        if (placementInfo != null)
+            try {
+                result= mapper.writeValueAsString(placementInfo);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        return result;
     }
 }

@@ -1,5 +1,8 @@
 package testSrc;
 
+import java.util.List;
+import java.util.Set;
+
 /**
  * Created by Ilya.Isaev on 26.08.2014.
  */
@@ -46,6 +49,13 @@ public class NestedExceptionTest {
         }
 
         B b = new B();
+    }
+
+    class AA{
+        List bb;
+    }
+    class BB extends  AA{
+        Set bb;
     }
 
     public static void main(String[] args) throws Exception {

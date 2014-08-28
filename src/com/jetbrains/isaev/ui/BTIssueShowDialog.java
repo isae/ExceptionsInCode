@@ -1,18 +1,14 @@
 package com.jetbrains.isaev.ui;
 
-import com.intellij.openapi.actionSystem.AnAction;
-import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.ui.DialogWrapper;
-import com.intellij.ui.components.labels.ActionLink;
 import com.jetbrains.isaev.GlobalVariables;
+import com.jetbrains.isaev.dao.IssuesDAO;
 import com.jetbrains.isaev.state.BTIssue;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
-import javax.swing.tree.ExpandVetoException;
 import java.awt.*;
 import java.awt.event.*;
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 
@@ -21,8 +17,9 @@ public class BTIssueShowDialog extends DialogWrapper {
     private JTextArea summaryField;
     private JTextPane descriptionField;
     private JButton button1;
+    private JCheckBox mustBeShownCheckBox;
     private JEditorPane editorPane1;
-    private BTIssue item;
+    private BTIssue issue;
 
     private static void open(URI uri) {
         if (Desktop.isDesktopSupported() && uri != null) {
@@ -34,16 +31,26 @@ public class BTIssueShowDialog extends DialogWrapper {
         }
     }
 
-    public BTIssueShowDialog(final BTIssue item) {
+    @Override
+    protected void doOKAction() {
+        issue.setTitle(summaryField.getText());
+        issue.setDescription(descriptionField.getText());
+        issue.setMustBeShown(mustBeShownCheckBox.isSelected());
+        IssuesDAO.getInstance().updateIssue(this.issue);
+        super.doOKAction();
+    }
+
+    public BTIssueShowDialog(final BTIssue issue) {
         super(GlobalVariables.getInstance().project, false);
-        this.item = item;
+        this.issue = issue;
         setSize(800, 600);
-        setTitle(item.getNumber());
-        summaryField.setText(item.getTitle());
-        descriptionField.setText(item.getDescription());
+        setTitle(issue.getNumber());
+        summaryField.setText(issue.getTitle());
+        descriptionField.setText(issue.getDescription());
+        mustBeShownCheckBox.setSelected(issue.isMustBeShown());
         init();
-        String domain = item.getProject().getBtAccount().getDomainName();
-        final String tmp = domain + "/issue/" + item.getNumber();
+        String domain = issue.getProject().getBtAccount().getDomainName();
+        final String tmp = domain + "/issue/" + issue.getNumber();
         button1.setText(tmp);
         button1.addActionListener(new ActionListener() {
             @Override

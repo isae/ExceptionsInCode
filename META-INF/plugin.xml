@@ -57,12 +57,12 @@
         <!--<group id="MyPlugin.SampleMenu" text="_Sample Menu" description="Sample menu">
             <add-to-group group-id="MainMenu" anchor="last"/>
             <action id="Myplugin.Textboxes" class="com.jetbrains.isaev.actions.TextBoxes" text="Text _Boxes"
-                    description="A test menu item"/>
+                    description="A test menu issue"/>
 
             <action id="Myplugin.Dialogs"
                     class="com.jetbrains.isaev.actions.DumbAction2"
                     text="_Dumb"
-                    description="A test menu item">
+                    description="A test menu issue">
                 <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt z"/>
                 &lt;!&ndash;<add-to-group group-id="com.jetbrains.isaevv.actions.MyActionGroup" anchor="first"/>&ndash;&gt;
             </action>

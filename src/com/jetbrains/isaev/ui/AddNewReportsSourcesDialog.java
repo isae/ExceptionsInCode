@@ -100,7 +100,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
         //textField2.setText("Ilya.Isaev@jetbrains.com");
         //passwordField1.setText(".Lu85Ga");
         model.clear();
-        Set<BTAccount> accsFromDB = issuesDAO.getAccountsWithProjects();
+        List<BTAccount> accsFromDB = issuesDAO.getAccountsWithProjects();
         if (!accsFromDB.isEmpty()) {
             workingPane.setVisible(true);
             for (BTAccount acc : accsFromDB) {

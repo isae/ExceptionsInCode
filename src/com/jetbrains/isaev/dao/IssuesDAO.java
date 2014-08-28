@@ -8,6 +8,7 @@ import com.jetbrains.isaev.state.BTAccountType;
 import com.jetbrains.isaev.state.BTIssue;
 import com.jetbrains.isaev.state.BTProject;
 import com.jetbrains.isaev.ui.ParsedException;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.*;
 import org.springframework.jdbc.core.simple.SimpleJdbcCall;
@@ -30,7 +31,7 @@ public class IssuesDAO {
 
     private static final String PATH_SEPARATOR = System.getProperty("file.separator");
     private static final String DB_NAME = "BTIssuesDB";
-    private static final int CURRENT_DATABASE_VERSION = 3;
+    private static final int CURRENT_DATABASE_VERSION = 5;
     private static final String STORAGE_FOLDER_PATH = GlobalVariables.getInstance().project.getBasePath() + PATH_SEPARATOR + ".idea" + PATH_SEPARATOR + "BTIssuesDB";
     private static final String ACCOUNTS_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS Accounts (" +
             "accountID INT  PRIMARY KEY  AUTO_INCREMENT, " +
@@ -53,6 +54,7 @@ public class IssuesDAO {
             "title CLOB, " +
             "description CLOB, " +
             "number VARCHAR(63), " +
+            "mustBeShown BOOLEAN DEFAULT TRUE, " +
             "lastUpdated TIMESTAMP, " +
             "FOREIGN KEY(projectID) REFERENCES Projects(projectID) ON DELETE CASCADE)";
     private static final String EXCEPTIONS_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS Exceptions (" +
@@ -69,16 +71,26 @@ public class IssuesDAO {
             "fileName VARCHAR(255), " +
             "lineNumber INT, " +
             "anOrder TINYINT, " +
+            "dndInfo CLOB, " +
+            "onPlace BOOLEAN DEFAULT FALSE, " +
             "FOREIGN KEY(exceptionID) REFERENCES Exceptions(exceptionID) ON DELETE CASCADE)";
 
     protected static final Logger logger = Logger.getInstance(IssuesDAO.class);
     private static IssuesDAO instance;
     private static boolean dbChanged = false;
     JdbcTemplate db;
+
+    private static  CachedArrayList<BTIssue> issues;
+    private static CachedHashSet<BTAccount> accounts;
+    private static HashMap<Long, StackTraceElement> stElementsCache;
     private static RowMapper<StackTraceElement> stackTraceElementRowMapper = new RowMapper<StackTraceElement>() {
         @Override
         public StackTraceElement mapRow(ResultSet rs, int i) throws SQLException {
-            return new StackTraceElement(rs.getLong("stElementID"), rs.getString("declaringClass"), rs.getString("methodName"), rs.getString("fileName"), rs.getInt("lineNumber"), rs.getLong("exceptionID"), rs.getByte("anOrder"));
+            long id = rs.getLong("stElementID");
+            if (!stElementsCache.containsKey(id)) {
+                stElementsCache.put(id, new StackTraceElement(id, rs.getString("declaringClass"), rs.getString("methodName"), rs.getString("fileName"), rs.getInt("lineNumber"), rs.getLong("exceptionID"), rs.getByte("anOrder"), rs.getBoolean("onPlace"), getStringFromClob(rs.getClob("dndInfo"))));
+            }
+            return stElementsCache.get(id);
         }
     };
 
@@ -90,9 +102,6 @@ public class IssuesDAO {
     private class CachedHashSet<T> extends HashSet<T> {
         public boolean stateChanged = true;
     }
-
-    private CachedArrayList<BTIssue> issues;
-    private CachedHashSet<BTAccount> accounts;
 
     public static IssuesDAO getInstance() {
         if (instance == null) {
@@ -132,6 +141,7 @@ public class IssuesDAO {
         }
         issues = new CachedArrayList<BTIssue>();
         accounts = new CachedHashSet<BTAccount>();
+        stElementsCache = new HashMap<Long, StackTraceElement>();
     }
 
     private void startMigrationToAnotherVersion(int oldVersion) {
@@ -172,7 +182,7 @@ public class IssuesDAO {
             public BTIssue extractData(ResultSet rs) throws SQLException, DataAccessException {
                 boolean f = true;
                 if (rs.next()) {
-                    BTIssue issue1 = new BTIssue(rs.getInt("issueID"), getStringFromClob(rs.getClob("title")), getStringFromClob(rs.getClob("description")), rs.getTimestamp("lastUpdated"), rs.getString("number"), rs.getInt("projectID"));
+                    BTIssue issue1 = new BTIssue(rs.getInt("issueID"), getStringFromClob(rs.getClob("title")), getStringFromClob(rs.getClob("description")), rs.getTimestamp("lastUpdated"), rs.getString("number"), rs.getInt("projectID"), rs.getBoolean("mustBeShown"));
                     return issue1;
                 } else {
                     return null;
@@ -193,14 +203,17 @@ public class IssuesDAO {
 
             @Override
             public BTIssue mapRow(ResultSet rs, int i) throws SQLException {
-                BTIssue issue = new BTIssue(rs.getInt("issueID"), getStringFromClob(rs.getClob("title")), getStringFromClob(rs.getClob("description")), rs.getTimestamp("lastUpdated"), rs.getString("number"), rs.getInt("projectID"));
+                BTIssue issue = new BTIssue(rs.getInt("issueID"), getStringFromClob(rs.getClob("title")), getStringFromClob(rs.getClob("description")), rs.getTimestamp("lastUpdated"), rs.getString("number"), rs.getInt("projectID"), rs.getBoolean("mustBeShown"));
                 if (!btIssues.containsKey(issue.hashCode())) btIssues.put(issue.hashCode(), issue);
                 issue = btIssues.get(issue.hashCode());
                 ParsedException exception = new ParsedException(rs.getInt("issueID"), rs.getString("name"), rs.getLong("exceptionID"), getStringFromClob(rs.getClob("message")));
                 if (!issue.getExceptions().containsKey(exception.hashCode()))
                     issue.getExceptions().put(exception.hashCode(), exception);
-                exception = issue.getExceptions().get(exception.hashCode());
-                StackTraceElement element = new StackTraceElement(rs.getLong("stElementID"), rs.getString("declaringClass"), rs.getString("methodName"), rs.getString("fileName"), rs.getInt("lineNumber"), rs.getLong("exceptionID"), rs.getByte("anOrder"));
+                long stID = rs.getLong("stElementID");
+                if (!stElementsCache.containsKey(stID)) {
+                    stElementsCache.put(stID, new StackTraceElement(stID, rs.getString("declaringClass"), rs.getString("methodName"), rs.getString("fileName"), rs.getInt("lineNumber"), rs.getLong("exceptionID"), rs.getByte("anOrder"), rs.getBoolean("onPlace"), getStringFromClob(rs.getClob("dndInfo"))));
+                }
+                StackTraceElement element = stElementsCache.get(stID);
                 if (!exception.getStacktrace().containsKey(element.hashCode()))
                     exception.getStacktrace().put(element.hashCode(), element);
                 return null;
@@ -217,7 +230,7 @@ public class IssuesDAO {
         List<BTIssue> result = db.query("SELECT * FROM Issues", (Object[]) null, new RowMapper<BTIssue>() {
             @Override
             public BTIssue mapRow(ResultSet rs, int i) throws SQLException {
-                return new BTIssue(rs.getInt("issueID"), getStringFromClob(rs.getClob("title")), getStringFromClob(rs.getClob("description")), rs.getTimestamp("lastUpdated"), rs.getString("number"), rs.getInt("projectID"));
+                return new BTIssue(rs.getInt("issueID"), getStringFromClob(rs.getClob("title")), getStringFromClob(rs.getClob("description")), rs.getTimestamp("lastUpdated"), rs.getString("number"), rs.getInt("projectID"), rs.getBoolean("mustBeShown"));
 
             }
         });
@@ -233,13 +246,15 @@ public class IssuesDAO {
         });
     }
 
-    private String getStringFromClob(Clob clob) throws SQLException {
+    private static
+    @NotNull
+    String getStringFromClob(Clob clob) throws SQLException {
+        if (clob == null) return "";
         java.util.Scanner s = new java.util.Scanner(clob.getCharacterStream()).useDelimiter("\\A");
-        String result = s.hasNext() ? s.next() : "";
-        return result;
+        return s.hasNext() ? s.next() : "";
     }
 
-    public Set<BTAccount> getAccountsWithProjects() {
+    public List<BTAccount> getAccountsWithProjects() {
         accounts.clear();
         final Map<Integer, BTAccount> tmp = new HashMap<Integer, BTAccount>();
         final Map<Integer, List<BTProject>> tmp2 = new HashMap<Integer, List<BTProject>>();
@@ -264,10 +279,10 @@ public class IssuesDAO {
         for (BTAccount acc : tmp.values()) {
             acc.setProjects(tmp2.get(acc.getAccountID()));
         }
-        return new HashSet<BTAccount>(tmp.values());
+        return new ArrayList<BTAccount>(tmp.values());
     }
 
-    private Set<BTAccount> getOnlyAccounts() {
+    private List<BTAccount> getOnlyAccounts() {
         accounts.clear();
         db.query("SELECT * FROM Accounts ", (Object[]) null, new RowMapper<Object>() {
             @Override
@@ -278,7 +293,7 @@ public class IssuesDAO {
 
             }
         });
-        return accounts;
+        return new ArrayList<BTAccount>(accounts);
     }
 
     public List<StackTraceElement> getMethodNameToSTElement(String className, String methodName) {
@@ -320,7 +335,6 @@ public class IssuesDAO {
             }
             updateProjects(e.getAccountID(), e.getProjects());
         }
-        ;
     }
 
     private void updateProjects(int accountID, List<BTProject> projects) {
@@ -351,7 +365,9 @@ public class IssuesDAO {
     }
 
     public void saveState() {
-
+        for (StackTraceElement element : stElementsCache.values()) {
+            db.update("UPDATE STElements SET dndInfo = ?, onPlace = ? WHERE stElementID = ?", getClobFromString(element.getWritablePlacementInfo()), true, element.getID());
+        }
     }
 
     public void storeIssues(List<BTIssue> issues) {
@@ -366,7 +382,7 @@ public class IssuesDAO {
                 db.update("DELETE FROM Issues WHERE number = ?", issue.getNumber());
             }
 
-            db.update("INSERT INTO Issues (projectID,title,description,number,lastUpdated) values (?,?,?,?,?)", e.getProjectID(), getClobFromString(e.getTitle()), getClobFromString(e.getDescription()), e.getNumber(), e.getLastUpdated());
+            db.update("INSERT INTO Issues (projectID,title,description,number,lastUpdated,mustBeShown) values (?,?,?,?,?,?)", e.getProjectID(), getClobFromString(e.getTitle()), getClobFromString(e.getDescription()), e.getNumber(), e.getLastUpdated(), e.isMustBeShown());
             e.setIssueID(db.query("SELECT issueID FROM Issues WHERE (projectID = ? AND number = ?)", new Object[]{e.getProjectID(), e.getNumber()}, new ResultSetExtractor<Integer>() {
                 @Override
                 public Integer extractData(ResultSet rs) throws SQLException, DataAccessException {
@@ -376,8 +392,12 @@ public class IssuesDAO {
             }));
             storeExceptions(e.getIssueID(), e.getExceptions());
         }
-
         // dbChanged = true;
+    }
+
+    public void updateIssue(BTIssue issue) {
+        if (issue.getIssueID() != 0)
+            db.update("UPDATE Issues SET title = ? , description = ?, mustBeShown = ? WHERE issueID = ?", getClobFromString(issue.getTitle()), getClobFromString(issue.getDescription()), issue.isMustBeShown(), issue.getIssueID());
     }
 
     private Clob getClobFromString(String description) {
@@ -437,13 +457,15 @@ public class IssuesDAO {
                 db.update(new PreparedStatementCreator() {
                     @Override
                     public PreparedStatement createPreparedStatement(Connection con) throws SQLException {
-                        PreparedStatement statement = con.prepareStatement("INSERT INTO STElements (exceptionID,declaringClass,methodName,fileName, lineNumber, anOrder) values (?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS);
+                        PreparedStatement statement = con.prepareStatement("INSERT INTO STElements (exceptionID,declaringClass,methodName,fileName, lineNumber, anOrder, onPlace, dndInfo) values (?,?,?,?,?,?, ?, ?)", Statement.RETURN_GENERATED_KEYS);
                         statement.setLong(1, el.getExceptionID());
                         statement.setString(2, el.getDeclaringClass());
                         statement.setString(3, el.getMethodName());
                         statement.setString(4, el.getFileName());
                         statement.setInt(5, el.getLineNumber());
                         statement.setByte(6, el.getOrder());
+                        statement.setBoolean(7, el.isOnPlace());
+                        statement.setClob(8, getClobFromString(el.getWritablePlacementInfo()));
                         return statement;
                     }
                 }, hold);

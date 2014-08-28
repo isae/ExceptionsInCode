@@ -15,11 +15,15 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
 import com.jetbrains.isaev.GlobalVariables;
 import com.jetbrains.isaev.dao.IssuesDAO;
+import com.jetbrains.isaev.notifications.MyLineMarkerProvider;
+import com.jetbrains.isaev.notifications.ReportedExceptionLineMarkerInfo;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.management.Notification;
 import javax.swing.*;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 /**
  * Created by Ilya.Isaev on 30.07.2014.
@@ -46,6 +50,11 @@ public class MyProjectComponent implements ProjectComponent {
     }
 
     public void disposeComponent() {
+        for (HashMap<Integer, ArrayList<ReportedExceptionLineMarkerInfo>> m : MyLineMarkerProvider.markerState.values())
+            for (ArrayList<ReportedExceptionLineMarkerInfo> l : m.values())
+                for (ReportedExceptionLineMarkerInfo info : l)
+                    info.updateSTElementsPlacementInfo();
+        IssuesDAO.getInstance().saveState();
         // TODO: insert component disposal logic here
     }
 

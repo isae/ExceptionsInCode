@@ -3,76 +3,82 @@ package com.jetbrains.isaev.notifications;
 import com.intellij.codeHighlighting.Pass;
 import com.intellij.codeInsight.daemon.GutterIconNavigationHandler;
 import com.intellij.codeInsight.daemon.MergeableLineMarkerInfo;
-import com.intellij.codeInsight.daemon.impl.MarkerType;
-import com.intellij.openapi.application.ApplicationManager;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
-import com.intellij.openapi.editor.HighlighterColors;
-import com.intellij.openapi.editor.LogicalPosition;
-import com.intellij.openapi.editor.colors.EditorColorsManager;
-import com.intellij.openapi.editor.colors.EditorColorsScheme;
-import com.intellij.openapi.editor.ex.EditorGutterComponentEx;
 import com.intellij.openapi.editor.ex.MarkupModelEx;
 import com.intellij.openapi.editor.ex.RangeHighlighterEx;
 import com.intellij.openapi.editor.impl.DocumentMarkupModel;
 import com.intellij.openapi.editor.markup.GutterIconRenderer;
 import com.intellij.openapi.editor.markup.HighlighterLayer;
 import com.intellij.openapi.editor.markup.MarkupEditorFilterFactory;
-import com.intellij.openapi.editor.markup.TextAttributes;
 import com.intellij.openapi.fileEditor.FileDocumentManager;
-import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.ui.popup.JBPopup;
 import com.intellij.openapi.ui.popup.JBPopupFactory;
-import com.intellij.openapi.util.Comparing;
-import com.intellij.openapi.util.TextRange;
 import com.intellij.openapi.vfs.VirtualFile;
-import com.intellij.openapi.vfs.VirtualFileManager;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiJavaFile;
 import com.intellij.ui.awt.RelativePoint;
 import com.intellij.util.Function;
-import com.intellij.xdebugger.ui.DebuggerColors;
 import com.jetbrains.isaev.GlobalVariables;
+import com.jetbrains.isaev.issues.*;
+import com.jetbrains.isaev.issues.StackTraceElement;
 import com.jetbrains.isaev.state.BTIssue;
 import com.jetbrains.isaev.ui.IconProvider;
-import jetbrains.buildServer.messages.serviceMessages.Message;
+import com.jetbrains.isaev.utils.LineMarkerUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
-import javax.swing.text.Highlighter;
-import java.awt.*;
-import java.awt.dnd.MouseDragGestureRecognizer;
-import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Created by Ilya.Isaev on 05.08.2014.
  */
 public class ReportedExceptionLineMarkerInfo extends MergeableLineMarkerInfo<PsiElement> {
-    Set<BTIssue> set;
-    private static com.intellij.openapi.diagnostic.Logger logger = com.intellij.openapi.diagnostic.Logger.getInstance(ReportedExceptionLineMarkerInfo.class);
+    private final HashMap<Integer, BTIssue> issues;
+    HashMap<Long, com.jetbrains.isaev.issues.StackTraceElement> stElements;
+    private List<BTIssue> issuesToShow;
+    private boolean popupListValid = true;
+    private int relativePosition;
+    private static com.intellij.openapi.diagnostic.Logger logger = Logger.getInstance(ReportedExceptionLineMarkerInfo.class);
     @Nullable
     private RangeHighlighterEx myHighlighter;
+
+    public void addStackTraceElement(StackTraceElement stElement) {
+        stElements.put(stElement.getID(), stElement);
+        popupListValid = false;
+    }
+
+    public static enum Type {
+        CLASS,
+        METHOD
+    }
+
+    private Type type;
     private boolean myDisposed;
     int currentLine = -1;//may be wrong
-    private Editor ed;
+    private Editor editor;
     public PsiJavaFile file;
 
-    public ReportedExceptionLineMarkerInfo(PsiElement range, Set<BTIssue> issueSet, PsiJavaFile file, Editor ed) {
+    public ReportedExceptionLineMarkerInfo(PsiElement range, int i, HashMap<Long, StackTraceElement> stElements, HashMap<Integer, BTIssue> issues, PsiJavaFile file, Editor editor, Type type) {
         super(
                 range,
                 range.getTextRange(),
-                IconProvider.getIcon(issueSet.size() > 1 ? IconProvider.IconRef.WARN_MULTIPLE : IconProvider.IconRef.WARN),
+                IconProvider.getIcon(issues.size() > 1 ? IconProvider.IconRef.WARN_MULTIPLE : IconProvider.IconRef.WARN),
                 Pass.UPDATE_OVERRIDEN_MARKERS,
-                getMarkerTooltip(issueSet),
-                getNaviHandler(issueSet),
+                getMarkerTooltip(issues, type),
+                getNaviHandler(issues),
                 GutterIconRenderer.Alignment.RIGHT);
-        this.set = issueSet;
+        this.issues = issues;
         this.file = file;
-        this.ed = ed;
+        this.editor = editor;
+        this.type = type;
+        this.relativePosition = i;
+        this.stElements = stElements;
     }
 
     @Nullable
@@ -81,25 +87,24 @@ public class ReportedExceptionLineMarkerInfo extends MergeableLineMarkerInfo<Psi
         return new MyDraggableGutterIconRenderer(this);
     }
 
-    private static GutterIconNavigationHandler<PsiElement> getNaviHandler(final Set<BTIssue> issueSet) {
+    private static GutterIconNavigationHandler<PsiElement> getNaviHandler(final HashMap<Integer, BTIssue> set) {
         return new GutterIconNavigationHandler<PsiElement>() {
             @Override
             public void navigate(MouseEvent e, PsiElement elt) {
-                IssuesPopupList list = new IssuesPopupList(issueSet);
+                IssuesPopupList list = new IssuesPopupList(set);
                 JBPopup popup = JBPopupFactory.getInstance().createListPopupBuilder(list).setCloseOnEnter(false).createPopup();
                 list.setContainingPopup(popup);
                 popup.show(new RelativePoint(e));
-                //System.out.println("Source is: " + comp.);
             }
         };
     }
 
 
-    private static Function<? super PsiElement, String> getMarkerTooltip(final Set<BTIssue> set) {
+    private static Function<? super PsiElement, String> getMarkerTooltip(final HashMap<Integer, BTIssue> set, final Type type) {
         return new Function<PsiElement, String>() {
             @Override
             public String fun(PsiElement psiElement) {
-                return set.size() + " issues here";
+                return set.size() + " issues here ";
             }
         };
     }
@@ -132,41 +137,63 @@ public class ReportedExceptionLineMarkerInfo extends MergeableLineMarkerInfo<Psi
         return FileDocumentManager.getInstance().getDocument(file);
     }
 
-    private int getLine() {
+    public int getLine() {
         if (myHighlighter != null) {
-            return ed.offsetToLogicalPosition(myHighlighter.getAffectedAreaStartOffset()).line;
+            return editor.offsetToLogicalPosition(myHighlighter.getAffectedAreaStartOffset()).line;
+        } else return editor.offsetToLogicalPosition(getElement().getTextOffset()).line;
+    }
+
+    public void updateSTElementsPlacementInfo() {
+        int line = getLine();
+        for (StackTraceElement element : stElements.values()) {
+            PlacementInfo info = element.getPlacementInfo();
+            if (type == Type.CLASS) {
+                if (currentLine != -1)
+                    info.absolute.remove(currentLine);
+                info.absolute.add(line);
+            }
         }
-        return -1;
     }
 
     public void updateUI(final int line) {
+        int initialLine = currentLine;
+        currentLine = getLine();
+        if (initialLine != -1)
+            relativePosition += line - currentLine;
         currentLine = line;
-      //  int prevPos = getLine();
-    //    if (prevPos != line) {
-            final ReportedExceptionLineMarkerInfo info = this;
-            SwingUtilities.invokeLater(new Runnable() {
-                @Override
-                public void run() {
-                    Document document = getDocument();
-                    if (document == null) {
-                        return;
-                    }
-                    if (myHighlighter != null) {
-                        removeHighlighter();
-                    }
-
-                    MarkupModelEx markupModel;
-                    markupModel = (MarkupModelEx) DocumentMarkupModel.forDocument(document, GlobalVariables.project, true);
-                    myHighlighter = markupModel.addPersistentLineHighlighter(line, HighlighterLayer.SYNTAX, null);
-                    if (myHighlighter == null) {
-                        return;
-                    }
-                    myHighlighter.setGutterIconRenderer(new MyDraggableGutterIconRenderer(info));
-                    myHighlighter.setEditorFilter(MarkupEditorFilterFactory.createIsNotDiffFilter());
+        for (StackTraceElement element : stElements.values()) {
+            PlacementInfo info = element.getPlacementInfo();
+            if (type == Type.METHOD) {
+                String signature = LineMarkerUtils.getMethodSignatureString((com.intellij.psi.PsiMethod) getElement());
+                info.methods.put(signature, relativePosition);
+            } else {
+                if (initialLine != -1)
+                    info.absolute.remove(initialLine);
+                info.absolute.add(currentLine);
+            }
+        }
+        final ReportedExceptionLineMarkerInfo info = this;
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                Document document = getDocument();
+                if (document == null) {
+                    return;
                 }
-            });
-     //   }
-      //  logger.warn("Was " + prevPos + " become " + line);
+                if (myHighlighter != null) {
+                    removeHighlighter();
+                }
+
+                MarkupModelEx markupModel;
+                markupModel = (MarkupModelEx) DocumentMarkupModel.forDocument(document, GlobalVariables.project, true);
+                myHighlighter = markupModel.addPersistentLineHighlighter(line, HighlighterLayer.SYNTAX, null);
+                if (myHighlighter == null) {
+                    return;
+                }
+                myHighlighter.setGutterIconRenderer(new MyDraggableGutterIconRenderer(info));
+                myHighlighter.setEditorFilter(MarkupEditorFilterFactory.createIsNotDiffFilter());
+            }
+        });
     }
 
 
@@ -185,7 +212,7 @@ public class ReportedExceptionLineMarkerInfo extends MergeableLineMarkerInfo<Psi
         };
     }
 
-    public void updateUI(Editor ed) {
-        updateUI(ed.offsetToLogicalPosition(getElement().getTextOffset()).line);
+    public void updateUI() {
+        updateUI(editor.offsetToLogicalPosition(getElement().getTextOffset()).line);
     }
 }

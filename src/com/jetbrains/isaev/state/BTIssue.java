@@ -19,18 +19,20 @@ public class BTIssue {
     private String number;
     private Timestamp lastUpdated;
     private BTProject project;
+    private boolean mustBeShown = true;
     private int projectID;
     private int issueID;
     private Map<Integer, ParsedException> exceptions = new HashMap<Integer, ParsedException>();
 
 
-    public BTIssue(int issueID, String title, String descr , Timestamp lastUpdated, String number, int projectID) {
+    public BTIssue(int issueID, String title, String descr, Timestamp lastUpdated, String number, int projectID, boolean mustBeShown) {
         this.title = title;
         this.lastUpdated = lastUpdated;
         this.number = number;
         this.description = descr;
         this.projectID = projectID;
         this.issueID = issueID;
+        this.mustBeShown = mustBeShown;
     }
 
     public BTIssue() {
@@ -105,7 +107,7 @@ public class BTIssue {
     }
 
     public BTProject getProject() {
-        if(project==null) project = GlobalVariables.getInstance().dao.getProject(projectID);
+        if (project == null) project = GlobalVariables.getInstance().dao.getProject(projectID);
         return project;
     }
 
@@ -131,12 +133,12 @@ public class BTIssue {
     }
 
     public String getDescription() {
-     //   if (description == null) description = ZipUtils.decompress(zippedDescr);
+        //   if (description == null) description = ZipUtils.decompress(zippedDescr);
         return description;
     }
 
     public void setDescription(String description) {
-    //    this.zippedDescr = ZipUtils.compress(description);
+        //    this.zippedDescr = ZipUtils.compress(description);
         this.description = description;
     }
 
@@ -147,5 +149,13 @@ public class BTIssue {
 
     public void setExceptions(Map<Integer, ParsedException> exceptions) {
         this.exceptions = exceptions;
+    }
+
+    public boolean isMustBeShown() {
+        return mustBeShown;
+    }
+
+    public void setMustBeShown(boolean mustBeShown) {
+        this.mustBeShown = mustBeShown;
     }
 }

@@ -7,14 +7,16 @@ import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.DumbAware;
 import com.intellij.openapi.project.DumbService;
-import com.intellij.openapi.util.Pair;
 import com.intellij.psi.*;
-import com.intellij.psi.util.MethodSignature;
 import com.jetbrains.isaev.GlobalVariables;
 import com.jetbrains.isaev.dao.IssuesDAO;
+import com.jetbrains.isaev.issues.PlacementInfo;
 import com.jetbrains.isaev.issues.StackTraceElement;
 import com.jetbrains.isaev.state.BTIssue;
 import org.jetbrains.annotations.NotNull;
+
+import static com.jetbrains.isaev.utils.LineMarkerUtils.*;
+import static com.jetbrains.isaev.utils.LineMarkerUtils.hash;
 
 import java.util.*;
 
@@ -25,139 +27,171 @@ import java.util.*;
 public class MyLineMarkerProvider extends IconLineMarkerProvider implements DumbAware {
     private static final Logger logger = Logger.getInstance(MyLineMarkerProvider.class);
     private IssuesDAO dao = GlobalVariables.getInstance().dao;
-    private static HashMap<Integer, HashMap<Integer, ReportedExceptionLineMarkerInfo>> currentMarkers = new HashMap<Integer, HashMap<Integer, ReportedExceptionLineMarkerInfo>>(10);
-    private static String currentClassName;
-
-    private static int hash(PsiElement element) {
-        String tmp = ((PsiElement) element).toString();
-        return tmp.hashCode();
-    }
-
-    private static int hash(PsiJavaFile file) {
-        return ("file: " + file.getPackageName() + "." + file.getName()).hashCode();
-    }
-
-    private static int hash(PsiIdentifier id) {
-        return ("id: " + hash((PsiJavaFile) id.getContainingFile()) + id.getTextOffset() + id.getText()).hashCode();
-    }
-
-    private static int hash(PsiMethod m) {
-        return ("m: " + hash((PsiJavaFile) m.getContainingFile()) + m.getName() + m.getSignature(PsiSubstitutor.EMPTY)).hashCode();
-    }
-
-
-    private Integer hash(PsiMethodCallExpression el) {
-        return ("m c:" + el.getTextOffset() + el.getMethodExpression().getCanonicalText()).hashCode();
-    }
-
-
-    private static Pair<Integer, PsiElement> getCorrectPsiAnchor(PsiMethod method) {
-        PsiElement range;
-        int hash = 0;
-        if (method.isPhysical()) {
-            range = method.getNameIdentifier();
-            hash = hash(method.getNameIdentifier());
-        } else {
-            final PsiElement navigationElement = method.getNavigationElement();
-            if (navigationElement instanceof PsiNameIdentifierOwner) {
-                range = ((PsiNameIdentifierOwner) navigationElement).getNameIdentifier();
-                hash = hash(((PsiNameIdentifierOwner) navigationElement).getNameIdentifier());
-            } else {
-                range = navigationElement;
-                hash = hash(navigationElement);
-            }
-        }
-        if (range == null) {
-            range = method;
-            hash = hash(method);
-        }
-        return new Pair<Integer, PsiElement>(hash, range);
-    }
-
-    private static String getMethodSignatureString(PsiMethod method) {
-        MethodSignature signature = method.getSignature(PsiSubstitutor.EMPTY);
-        StringBuilder s = new StringBuilder();
-        final PsiTypeParameter[] typeParameters = signature.getTypeParameters();
-        if (typeParameters.length != 0) {
-            String sep = "<";
-            for (PsiTypeParameter typeParameter : typeParameters) {
-                s.append(sep).append(typeParameter.getName());
-                sep = ", ";
-            }
-            s.append(">");
-        }
-        s.append(signature.getName()).append("(").append(Arrays.asList(signature.getParameterTypes())).append(")");
-        return s.toString();
-    }
-
-    private <T extends PsiElement> List<T> getAllChildByClass(PsiElement element, Class<T> typeToken) {
-        List<T> list = new LinkedList<T>();
-        for (PsiElement elem : element.getChildren()) {
-            list.addAll(getAllChildByClass(elem, typeToken));
-        }
-        if (typeToken.isAssignableFrom(element.getClass())) {
-            boolean f = true;
-            list.add((T) element);
-        }
-        return list;
-    }
-
+    // private static HashMap<Integer, HashMap<Long, StackTraceElement>> fileToStElement = new HashMap<Integer, HashMap<Long, StackTraceElement>>(30);
+    public static HashMap<Integer, HashMap<Integer, ArrayList<ReportedExceptionLineMarkerInfo>>> markerState = new HashMap<Integer, HashMap<Integer, ArrayList<ReportedExceptionLineMarkerInfo>>>(30);
+    public static Editor currentEditor = null;
 
     @Override
     public void collectSlowLineMarkers(@NotNull List<PsiElement> elements, @NotNull Collection<LineMarkerInfo> result) {
+        addLineMarkers(elements);
+    }
+
+    private void addLineMarkers(List<PsiElement> elements) {
         ApplicationManager.getApplication().assertReadAccessAllowed();
-
-
         if (elements.isEmpty() || DumbService.getInstance(elements.get(0).getProject()).isDumb()) {
             return;
         }
 
-        Set<PsiMethod> methods = new HashSet<PsiMethod>();
-        PsiClass currentClass = null;
-        // logger.warn("slow ____________________\n");
-        Editor ed = GlobalVariables.getSelectedEditor();
+        /*class A {
+
+        }*/
+        currentEditor = GlobalVariables.getSelectedEditor();
         for (PsiElement element : elements) {
-            int lineNumber = ed.offsetToLogicalPosition(element.getTextOffset()).line;
-            // logger.warn("updated gutter: " + element + " " + lineNumber);
             if (element instanceof PsiMethod) {
-                methods.add((PsiMethod) element);
-                //  logger.warn("methodSignature: " + getMethodSignatureString((PsiMethod) element) + " from " + element.getNode().getTextRange().getStartOffset() + " to " + element.getTextRange().getEndOffset());
+                addMethodMarkers((PsiMethod) element);
             }
-            if (element instanceof PsiClass) currentClass = (PsiClass) element;
-        }
-        // logger.warn("//slow ____________________\n");
+            if (element instanceof PsiClass)
+                addClassMarkers((PsiClass) element);
+        }/*
+        // now we divided elements to class and methods. Methods may be not only in outer, but in inner and anonymous
+        //todo ПОДУМАТЬ ПРО ВЛОЖЕННЫЕ КЛАССЫ!!!!!!!
         if (currentClass != null) {
-            if (!currentMarkers.containsKey(hash((PsiJavaFile) currentClass.getContainingFile()))) {
-                currentMarkers.put(hash((PsiJavaFile) currentClass.getContainingFile()), new HashMap<Integer, ReportedExceptionLineMarkerInfo>());
+            if (!markerState.containsKey(hash((PsiJavaFile) currentClass.getContainingFile()))) {
+                markerState.put(hash((PsiJavaFile) currentClass.getContainingFile()), new HashMap<Integer, ReportedExceptionLineMarkerInfo>());
                 String currentClassName = currentClass.getQualifiedName();
                 List<StackTraceElement> elementList = dao.getClassNameToSTElement(currentClassName);
                 Set<BTIssue> issues = new HashSet<BTIssue>();
                 for (StackTraceElement element : elementList) issues.add(element.getException().getIssue());
                 if (!issues.isEmpty()) {
-                    // if (!currentMarkers.get(hash((PsiJavaFile) currentClass.getContainingFile())).containsKey(hash(currentClass))) {
-                    ReportedExceptionLineMarkerInfo tmp = new ReportedExceptionLineMarkerInfo(currentClass.getNameIdentifier(), issues, (PsiJavaFile) currentClass.getContainingFile(), ed);
-                    currentMarkers.get(hash((PsiJavaFile) currentClass.getContainingFile())).put(hash(currentClass.getNameIdentifier()), tmp);
-                    tmp.updateUI(ed);
+                    // if (!markerState.get(hash((PsiJavaFile) currentClass.getContainingFile())).containsKey(hash(currentClass))) {
+                    ReportedExceptionLineMarkerInfo tmp = new ReportedExceptionLineMarkerInfo(currentClass.getNameIdentifier(), issues, (PsiJavaFile) currentClass.getContainingFile(), currentEditor, ReportedExceptionLineMarkerInfo.Type.METHOD);
+                    markerState.get(hash((PsiJavaFile) currentClass.getContainingFile())).put(hash(currentClass.getNameIdentifier()), tmp);
+                    tmp.updateUI();
                     //  }
                     // result.add(tmp);
                 }
                 //logger.warn("Class name is: " + currentClassName);
             }
         }
-        if (!methods.isEmpty()) markMethods(methods, ed);
+        if (!methods.isEmpty()) markMethods(methods);*/
     }
 
-    private void markMethods(Set<PsiMethod> methods, Editor ed) {
-        for (PsiMethod method : methods) {
-            addMethodMarkers(method/*, result*/, ed);
+    private void addMethodMarkers(PsiMethod method) {
+        String fullClassName = getDbClassName(method.getContainingClass());
+        List<StackTraceElement> elements = dao.getMethodNameToSTElement(fullClassName, method.getName());
+        int fileHash = hash((PsiJavaFile) method.getContainingFile());
+        //checkMapToMap(fileToStElement, fileHash);
+        checkMapToMap(markerState, fileHash);
+        HashMap<Integer, HashMap<Long, StackTraceElement>> newMarkersFill = new HashMap<Integer, HashMap<Long, StackTraceElement>>();
+        HashMap<Integer, ArrayList<ReportedExceptionLineMarkerInfo>> existingMarkers = markerState.get(fileHash);
+        checkMapToList(existingMarkers, hash(method));
+        ArrayList<ReportedExceptionLineMarkerInfo> alreadyDrawn = existingMarkers.get(hash(method));
+        if (alreadyDrawn.isEmpty()) {
+            for (StackTraceElement stElement : elements) {
+                if (stElement.getPlacementInfo() == null) {
+                    PlacementInfo info = new PlacementInfo();
+                    stElement.setPlacementInfo(info);
+                }
+                PlacementInfo plInfo = stElement.getPlacementInfo();
+                if (stElement.getPlacementInfo().methods.isEmpty()) {
+                    plInfo.methods.put(getMethodSignatureString(method), 0);//todo heuristics
+                }
+                Integer row = plInfo.methods.get(getMethodSignatureString(method));
+                if (row != null) {
+                    int absoluteRow = getRowByElement(method, currentEditor) + row;
+                    checkMapToMap(newMarkersFill, absoluteRow);
+                    //todo check if line marker info already exists on this row
+                    HashMap<Long, StackTraceElement> info = newMarkersFill.get(absoluteRow);
+                    info.put(stElement.getID(), stElement);
+
+                }/*
+                for (Integer absoluteRow : plInfo.absolute) {
+                    checkMapToMap(newMarkersFill, absoluteRow);
+                    //todo check if line marker info already exists on this row
+                    HashMap<Long, StackTraceElement> info = newMarkersFill.get(absoluteRow);
+                    info.put(stElement.getID(), stElement);
+                }*/
+            }
+            Map<Integer, ReportedExceptionLineMarkerInfo> newMarkers = new HashMap<Integer, ReportedExceptionLineMarkerInfo>();
+            for (Map.Entry<Integer, HashMap<Long, StackTraceElement>> entry : newMarkersFill.entrySet()) {
+                ReportedExceptionLineMarkerInfo info = new ReportedExceptionLineMarkerInfo(method, entry.getKey() - getRowByElement(method, currentEditor), newMarkersFill.get(entry.getKey()), collectIssues(newMarkersFill.get(entry.getKey())), (PsiJavaFile) method.getContainingFile(), currentEditor, ReportedExceptionLineMarkerInfo.Type.METHOD);
+                alreadyDrawn.add(info);
+                newMarkers.put(entry.getKey(), info);
+            }
+            drawMarkers(newMarkers);
+        } else {
+            Map<Integer, ReportedExceptionLineMarkerInfo> map = new HashMap<Integer, ReportedExceptionLineMarkerInfo>();
+            for (ReportedExceptionLineMarkerInfo info : alreadyDrawn) {
+                map.put(info.getLine(), info);
+            }
+            drawMarkers(map);
         }
     }
 
-    private void checkContainer(Map<PsiMethodCallExpression, HashSet<BTIssue>> target, PsiMethodCallExpression toCheck) {
-        if (!target.containsKey(toCheck)) target.put(toCheck, new HashSet<BTIssue>());
+    private void drawMarkers(Map<Integer, ReportedExceptionLineMarkerInfo> newMarkers) {
+        for (Map.Entry<Integer, ReportedExceptionLineMarkerInfo> entry : newMarkers.entrySet()) {
+            entry.getValue().updateUI(entry.getKey());
+        }
     }
 
-    private void addMethodMarkers(PsiMethod method,/*, Collection<LineMarkerInfo> result*/Editor ed) {
+    private void addClassMarkers(PsiClass clazz) {
+        PsiClass element = getMostOuterClass(clazz);
+        String fullClassName = getDbClassName(element);
+        List<StackTraceElement> elements = dao.getClassNameToSTElement(fullClassName);
+        int fileHash = hash((PsiJavaFile) element.getContainingFile());
+        checkMapToMap(markerState, fileHash);
+        HashMap<Integer, HashMap<Long, StackTraceElement>> newMarkersFill = new HashMap<Integer, HashMap<Long, StackTraceElement>>();
+        HashMap<Integer, ArrayList<ReportedExceptionLineMarkerInfo>> existingMarkers = markerState.get(fileHash);
+        checkMapToList(existingMarkers, hash(element));
+        ArrayList<ReportedExceptionLineMarkerInfo> alreadyDrawn = existingMarkers.get(hash(element));
+        if (alreadyDrawn.isEmpty()) {
+            for (StackTraceElement stElement : elements) {
+                if (stElement.getPlacementInfo() == null) {
+                    PlacementInfo info = new PlacementInfo();
+                    stElement.setPlacementInfo(info);
+                }
+                PlacementInfo plInfo = stElement.getPlacementInfo();
+                if (plInfo.absolute.isEmpty()) {
+                    int row = getRowByElement(element, currentEditor);
+                    plInfo.absolute.add(row);
+                }
+                for (Integer absoluteRow : plInfo.absolute) {
+                    checkMapToMap(newMarkersFill, absoluteRow);
+                    //todo check if line marker info already exists on this row
+                    HashMap<Long, StackTraceElement> info = newMarkersFill.get(absoluteRow);
+                    info.put(stElement.getID(), stElement);
+                }
+            }
+            Map<Integer, ReportedExceptionLineMarkerInfo> newMarkers = new HashMap<Integer, ReportedExceptionLineMarkerInfo>();
+            for (Map.Entry<Integer, HashMap<Long, StackTraceElement>> entry : newMarkersFill.entrySet()) {
+                ReportedExceptionLineMarkerInfo info = new ReportedExceptionLineMarkerInfo(element, entry.getKey(), newMarkersFill.get(entry.getKey()), collectIssues(newMarkersFill.get(entry.getKey())), (PsiJavaFile) element.getContainingFile(), currentEditor, ReportedExceptionLineMarkerInfo.Type.CLASS);
+                newMarkers.put(entry.getKey(), info);
+                alreadyDrawn.add(info);
+            }
+            drawMarkers(newMarkers);
+        } else {
+            Map<Integer, ReportedExceptionLineMarkerInfo> map = new HashMap<Integer, ReportedExceptionLineMarkerInfo>();
+            for (ReportedExceptionLineMarkerInfo info : alreadyDrawn) {
+                int line = info.getLine();
+                map.put(line, info);
+            }
+            drawMarkers(map);
+        }
+    }
+
+
+    private HashMap<Integer, BTIssue> collectIssues(HashMap<Long, StackTraceElement> elements) {
+        HashMap<Integer, BTIssue> result = new HashMap<Integer, BTIssue>();
+        for (Map.Entry<Long, StackTraceElement> entry : elements.entrySet()) {
+            BTIssue issue = entry.getValue().getException().getIssue();//todo make a direct link
+            if (!result.containsKey(issue.getIssueID())) {
+                result.put(issue.getIssueID(), issue);
+            }
+        }
+        return result;
+    }
+
+    /*private void addMethodMarkers(PsiMethod method) {
         PsiClass clazz = method.getContainingClass();
         Map<PsiMethodCallExpression, HashSet<BTIssue>> tempResult = new HashMap<PsiMethodCallExpression, HashSet<BTIssue>>();
         Map<StackTraceElement, Boolean> toAdd = new HashMap<StackTraceElement, Boolean>();
@@ -165,6 +199,7 @@ public class MyLineMarkerProvider extends IconLineMarkerProvider implements Dumb
         String className = file.getPackageName() + "." + clazz.getName();
         String methodName = method.getName();
         List<com.jetbrains.isaev.issues.StackTraceElement> elements = dao.getMethodNameToSTElement(className, methodName);
+
         if (elements != null) {
             for (com.jetbrains.isaev.issues.StackTraceElement element : elements) {
                 com.jetbrains.isaev.issues.StackTraceElement prev = element.getPrev();
@@ -181,13 +216,13 @@ public class MyLineMarkerProvider extends IconLineMarkerProvider implements Dumb
                         }
                     }
                     if (count == 1) {
-                        checkContainer(tempResult, anchor);
+                        checkMapToSet(tempResult, anchor);
                         tempResult.get(anchor).add(element.getException().getIssue());
                         toAdd.put(element, true);
                     }
                 }
             }
-            Set<BTIssue> tmp = new HashSet<BTIssue>();
+            HashMap<Integer, BTIssue> tmp = new HashMap<Integer, BTIssue>();
             for (StackTraceElement element : elements) {
                 if (toAdd.get(element) == null) {
                     tmp.add(element.getException().getIssue());
@@ -196,21 +231,41 @@ public class MyLineMarkerProvider extends IconLineMarkerProvider implements Dumb
             // Pair<Integer, PsiElement> rangePair = getCorrectPsiAnchor(method);
             PsiElement range = method;//rangePair.second;
             int hash = hash(method);//rangePair.first;
-            if (!tmp.isEmpty() && !currentMarkers.get(hash((PsiJavaFile) range.getContainingFile())).containsKey(hash)) {
-                ReportedExceptionLineMarkerInfo info = new ReportedExceptionLineMarkerInfo(range, tmp, (PsiJavaFile) range.getContainingFile(), ed);
-                currentMarkers.get(hash((PsiJavaFile) range.getContainingFile())).put(hash, info);
-                info.updateUI(ed.offsetToLogicalPosition(range.getTextOffset()).line);
+            if (!tmp.isEmpty() && !markerState.get(hash((PsiJavaFile) range.getContainingFile())).containsKey(hash)) {
+                ReportedExceptionLineMarkerInfo info = new ReportedExceptionLineMarkerInfo(range, tmp, (PsiJavaFile) range.getContainingFile(), currentEditor, ReportedExceptionLineMarkerInfo.Type.METHOD);
+                markerState.get(hash((PsiJavaFile) range.getContainingFile())).put(hash, info);
+                for (BTIssue issue : tmp)
+                    for (ParsedException p : issue.getExceptions().values())
+                        for (StackTraceElement el : p.getStacktrace().values()) {
+                            if (!el.getPlacementInfo().methods.containsKey(getMethodSignatureString(method))) {
+                                el.getPlacementInfo().methods.put(getMethodSignatureString(method), 0);
+                            }
+                        }
+                info.updateUI(currentEditor.offsetToLogicalPosition(range.getTextOffset()).line);
             }
             for (Map.Entry<PsiMethodCallExpression, HashSet<BTIssue>> entry : tempResult.entrySet()) {
                 PsiMethodCallExpression el = entry.getKey();
-                if (!currentMarkers.get(hash((PsiJavaFile) el.getContainingFile())).containsKey(hash(el))) {
-                    ReportedExceptionLineMarkerInfo info = new ReportedExceptionLineMarkerInfo(el, entry.getValue(), (PsiJavaFile) entry.getKey().getContainingFile(), ed);
-                    currentMarkers.get(hash((PsiJavaFile) el.getContainingFile())).put(hash(el), info);
-                    info.updateUI(ed.offsetToLogicalPosition(range.getTextOffset()).line);
+                if (!markerState.get(hash((PsiJavaFile) el.getContainingFile())).containsKey(hash(el))) {
+                    ReportedExceptionLineMarkerInfo info = new ReportedExceptionLineMarkerInfo(el, entry.getValue(), (PsiJavaFile) entry.getKey().getContainingFile(), currentEditor, ReportedExceptionLineMarkerInfo.Type.METHOD);
+                    markerState.get(hash((PsiJavaFile) el.getContainingFile())).put(hash(el), info);
+                    for (BTIssue issue : entry.getValue())
+                        for (ParsedException p : issue.getExceptions().values())
+                            for (StackTraceElement el2 : p.getStacktrace().values()) {
+                                if (!el2.getPlacementInfo().methods.containsKey(getMethodSignatureString(method))) {
+                                    el2.getPlacementInfo().methods.put(getMethodSignatureString(method), 0);
+                                }
+                            }
+                    info.updateUI(currentEditor.offsetToLogicalPosition(range.getTextOffset()).line);
                 }
             }
+
+            System.out.println("method_____________________");
+            for (StackTraceElement element : elements) {
+                System.out.println("json: " + element.getWritablePlacementInfo());
+            }
+            System.out.println("_____________________\n");
         }
-    }
+    }*/
 
 
 }

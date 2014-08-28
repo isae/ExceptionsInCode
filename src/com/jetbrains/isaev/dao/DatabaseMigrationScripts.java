@@ -13,6 +13,13 @@ public class DatabaseMigrationScripts {
             },
             {//v2 -> v3 and so on
                     "ALTER TABLE Accounts ADD COLUMN asGuest BOOLEAN AFTER password"
+            },
+            {
+                    "ALTER TABLE Issues ADD COLUMN mustBeShown BOOLEAN DEFAULT TRUE AFTER number",
+                    "ALTER TABLE STElements ADD COLUMN dndInfo CLOB AFTER anOrder"
+            },
+            {
+                    "ALTER TABLE STElements ADD COLUMN onPlace BOOLEAN DEFAULT FALSE AFTER dndInfo"
             }
     };
 }
