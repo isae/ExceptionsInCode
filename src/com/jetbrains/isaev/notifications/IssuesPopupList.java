@@ -22,7 +22,6 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LongSummaryStatistics;
 
 /**
  * Created by Ilya.Isaev on 05.08.2014.
@@ -37,11 +36,11 @@ public class IssuesPopupList extends JBList {
     public IssuesPopupList(final ReportedExceptionLineMarkerInfo anchor) {
         super(new ArrayList<BTIssue>(anchor.getIssues().values()));
         this.anchor = anchor;
-        final ListModel<BTIssue> model = getModel();
+        final ListModel model = getModel();
 
         addMouseListener(new MouseAdapter() {
             public void leftClick(MouseEvent e, int pos) {
-                BTIssue issue = model.getElementAt(pos);
+                BTIssue issue = (BTIssue) model.getElementAt(pos);
                 if (getModel().getSize() > 0) {
                     int index = locationToIndex(e.getPoint());
                     BTIssue item = (BTIssue) getModel().getElementAt(index);
@@ -52,7 +51,7 @@ public class IssuesPopupList extends JBList {
             }
 
             public void rightClick(MouseEvent e, int pos) {
-                final BTIssue issue = model.getElementAt(pos);
+                final BTIssue issue = (BTIssue) model.getElementAt(pos);
                 final EditorSettings settings = anchor.getEditor().getSettings();
                 if (firstTimeClick) {
                     firstTimeClick = false;
@@ -104,7 +103,7 @@ public class IssuesPopupList extends JBList {
             public void mouseClicked(MouseEvent e) {
                 int pos = IssuesPopupList.this.locationToIndex(e.getPoint());
                 if (pos != -1 && pos < model.getSize()) {
-                    BTIssue issue = model.getElementAt(pos);
+                    BTIssue issue = (BTIssue) model.getElementAt(pos);
                     if (SwingUtilities.isRightMouseButton(e)) {
                         rightClick(e, pos);
                     } else {

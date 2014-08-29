@@ -1,6 +1,9 @@
 package com.jetbrains.isaev.ui;
 
 import com.intellij.CommonBundle;
+import com.intellij.notification.Notification;
+import com.intellij.notification.NotificationType;
+import com.intellij.notification.Notifications;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.progress.ProgressManager;
@@ -197,9 +200,18 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
                     applyAction.actionPerformed(e);
                     BTAccount account = (BTAccount) model.getElementAt(pos);
                     List<BTProject> projects = account.getProjects();
+                    List<BTProject> mustBeUpdated = new ArrayList<BTProject>();
                     for (BTProject project : projects) {
                         if (project.isMustBeUpdated()) {
-                            ProgressManager.getInstance().run(new YouTrackIssuesDownloadStrategy(project));
+                            mustBeUpdated.add(project);
+                        }
+                    }
+                    if (!mustBeUpdated.isEmpty()) {
+                        if (YouTrackIssuesDownloadStrategy.alreadyRunning) {
+                            Notifications.Bus.notify(new com.intellij.notification.Notification("", "Cannot load issues", "Process is already runnning", NotificationType.ERROR));
+                        } else {
+                            ProgressManager.getInstance().run(new YouTrackIssuesDownloadStrategy(mustBeUpdated.toArray(new BTProject[mustBeUpdated.size()])));
+                            Notifications.Bus.notify(new com.intellij.notification.Notification("", "Process started in background", "Issues are loading now", NotificationType.INFORMATION));
                         }
                     }
                 }

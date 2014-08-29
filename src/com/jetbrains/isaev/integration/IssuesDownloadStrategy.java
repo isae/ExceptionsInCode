@@ -11,11 +11,13 @@ import org.jetbrains.annotations.NotNull;
  */
 public abstract class IssuesDownloadStrategy extends Task.Backgroundable {
     @NotNull
-    protected final BTProject btProject;
+    protected final BTProject[] btProjects;
 
-    public IssuesDownloadStrategy(@NotNull BTProject project) {
+
+
+    public IssuesDownloadStrategy(@NotNull BTProject[] projects) {
         super(GlobalVariables.getInstance().project, "Updating issues list");
-        this.btProject = project;
+        this.btProjects = projects;
     }
 
     @Override

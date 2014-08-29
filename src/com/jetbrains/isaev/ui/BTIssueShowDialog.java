@@ -1,5 +1,6 @@
 package com.jetbrains.isaev.ui;
 
+import com.intellij.ide.browsers.BrowserLauncher;
 import com.intellij.openapi.ui.DialogWrapper;
 import com.jetbrains.isaev.GlobalVariables;
 import com.jetbrains.isaev.dao.IssuesDAO;
@@ -9,8 +10,10 @@ import org.jetbrains.annotations.Nullable;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
 
 public class BTIssueShowDialog extends DialogWrapper {
     private JPanel contentPane;
@@ -21,14 +24,8 @@ public class BTIssueShowDialog extends DialogWrapper {
     private JEditorPane editorPane1;
     private BTIssue issue;
 
-    private static void open(URI uri) {
-        if (Desktop.isDesktopSupported() && uri != null) {
-            try {
-                Desktop.getDesktop().browse(uri);
-            } catch (Exception t) {
-                t.printStackTrace();
-            }
-        }
+    private static void open(String uri) {
+        BrowserLauncher.getInstance().browse(uri, null, GlobalVariables.getInstance().getProject());
     }
 
     @Override
@@ -55,15 +52,8 @@ public class BTIssueShowDialog extends DialogWrapper {
         button1.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                URI uri = null;
-                try {
-                    uri = new URI(tmp);
-                } catch (URISyntaxException e1) {
-                    e1.printStackTrace();
-                }
-                final URI finalUri = uri;
 
-                open(finalUri);
+                open(tmp);
             }
         });
         //  setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
