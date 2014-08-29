@@ -1,5 +1,7 @@
 package com.jetbrains.isaev.dao;
 
+import org.springframework.jdbc.core.JdbcTemplate;
+
 /**
  * Created by Ilya.Isaev on 25.08.2014.
  */
@@ -7,19 +9,42 @@ public class DatabaseMigrationScripts {
     /**
      * index == (old database version - 1)
      */
-    public static final String[][] scripts = new String[][]{
-            {//v1 -> v2
-                    "ALTER TABLE Issues ALTER COLUMN title CLOB"
+    public static JdbcTemplate db;
+
+    public static final Runnable[] scripts = new Runnable[]{
+            //v1 -> v2
+            new Runnable() {
+                @Override
+                public void run() {
+                    db.update("ALTER TABLE Issues ALTER COLUMN title CLOB");
+                }
             },
-            {//v2 -> v3 and so on
-                    "ALTER TABLE Accounts ADD COLUMN asGuest BOOLEAN AFTER password"
+            new Runnable() {//v2 -> v3 and so on
+                @Override
+                public void run() {
+                    db.update("ALTER TABLE Accounts ADD COLUMN  IF NOT EXISTS asGuest BOOLEAN AFTER password");
+                }
             },
-            {
-                    "ALTER TABLE Issues ADD COLUMN mustBeShown BOOLEAN DEFAULT TRUE AFTER number",
-                    "ALTER TABLE STElements ADD COLUMN dndInfo CLOB AFTER anOrder"
+            new Runnable() {
+                @Override
+                public void run() {
+                    db.update("ALTER TABLE Issues ADD COLUMN  IF NOT EXISTS  mustBeShown BOOLEAN DEFAULT TRUE AFTER number");
+                    db.update("ALTER TABLE STElements ADD COLUMN  IF NOT EXISTS  dndInfo CLOB AFTER anOrder");
+                }
             },
-            {
-                    "ALTER TABLE STElements ADD COLUMN onPlace BOOLEAN DEFAULT FALSE AFTER dndInfo"
+            new Runnable() {
+                @Override
+                public void run() {
+                    db.update("ALTER TABLE STElements ADD COLUMN IF NOT EXISTS onPlace BOOLEAN DEFAULT FALSE AFTER dndInfo");
+                }
+            },
+            new Runnable() {
+                @Override
+                public void run() {
+                    db.update("ALTER TABLE STElements ADD COLUMN  IF NOT EXISTS issueID INT AFTER exceptionID");
+                    db.update("UPDATE STElements S SET issueID = (SELECT E.issueID FROM Exceptions E WHERE E.exceptionID = S.exceptionID)");
+                    db.update("ALTER TABLE STElements ADD FOREIGN KEY (issueID) REFERENCES Issues(issueID) ON DELETE CASCADE");
+                }
             }
     };
 }

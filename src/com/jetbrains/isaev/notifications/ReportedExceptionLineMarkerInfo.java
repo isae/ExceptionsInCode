@@ -79,6 +79,28 @@ public class ReportedExceptionLineMarkerInfo extends MergeableLineMarkerInfo<Psi
         this.type = type;
         this.relativePosition = i;
         this.stElements = stElements;
+        MyNavigationHandler handler = (MyNavigationHandler) getNavigationHandler();
+        handler.anchor = this;
+    }
+
+    static class MyNavigationHandler implements GutterIconNavigationHandler<PsiElement> {
+
+        private final HashMap<Integer, BTIssue> set;
+        public ReportedExceptionLineMarkerInfo anchor;
+
+        public MyNavigationHandler(HashMap<Integer, BTIssue> set) {
+            this.set = set;
+        }
+
+        @Override
+        public void navigate(MouseEvent e, PsiElement elt) {
+            IssuesPopupList list = new IssuesPopupList(anchor);
+            JBPopup popup = JBPopupFactory.getInstance().createListPopupBuilder(list).setCloseOnEnter(false).createPopup();
+            list.setContainingPopup(popup);
+            list.addListener();
+            popup.show(new RelativePoint(e));
+
+        }
     }
 
     @Nullable
@@ -88,15 +110,7 @@ public class ReportedExceptionLineMarkerInfo extends MergeableLineMarkerInfo<Psi
     }
 
     private static GutterIconNavigationHandler<PsiElement> getNaviHandler(final HashMap<Integer, BTIssue> set) {
-        return new GutterIconNavigationHandler<PsiElement>() {
-            @Override
-            public void navigate(MouseEvent e, PsiElement elt) {
-                IssuesPopupList list = new IssuesPopupList(set);
-                JBPopup popup = JBPopupFactory.getInstance().createListPopupBuilder(list).setCloseOnEnter(false).createPopup();
-                list.setContainingPopup(popup);
-                popup.show(new RelativePoint(e));
-            }
-        };
+        return new MyNavigationHandler(set);
     }
 
 
@@ -200,6 +214,14 @@ public class ReportedExceptionLineMarkerInfo extends MergeableLineMarkerInfo<Psi
     @Override
     public Icon getCommonIcon(@NotNull List<MergeableLineMarkerInfo> infos) {
         return IconProvider.getIcon(IconProvider.IconRef.JIRA_SMALL);
+    }
+
+    public HashMap<Integer, BTIssue> getIssues() {
+        return issues;
+    }
+
+    public Editor getEditor() {
+        return editor;
     }
 
     @Override

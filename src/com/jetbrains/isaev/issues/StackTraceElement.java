@@ -1,6 +1,7 @@
 package com.jetbrains.isaev.issues;
 
 import com.jetbrains.isaev.GlobalVariables;
+import com.jetbrains.isaev.state.BTIssue;
 import com.jetbrains.isaev.ui.ParsedException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.jetbrains.annotations.NotNull;
@@ -33,16 +34,19 @@ public class StackTraceElement {
     private int lineNumber;
     private long ID;
     private long exceptionID;
+    private int issueID;
+    private BTIssue issue;
     private static final ObjectMapper mapper = new ObjectMapper();
 
-    public StackTraceElement(long stElementID, String declaringClass, String methodName, String fileName, int lineNumber, long exceptionID, byte order, boolean onPlace, String placementJson) {
+    public StackTraceElement(long stElementID, int issueID, String declaringClass, String methodName, String fileName, int lineNumber, long exceptionID, byte order, boolean onPlace, String placementJson) {
         this(stElementID, declaringClass, methodName, fileName, lineNumber);
         this.exceptionID = exceptionID;
+        this.issueID = issueID;
         this.order = order;
         this.onPlace = onPlace;
         if (placementJson != null && placementJson.length() != 0) {
             try {
-                placementInfo = mapper.readValue(placementJson,PlacementInfo.class);
+                placementInfo = mapper.readValue(placementJson, PlacementInfo.class);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -199,10 +203,27 @@ public class StackTraceElement {
         String result = "";
         if (placementInfo != null)
             try {
-                result= mapper.writeValueAsString(placementInfo);
+                result = mapper.writeValueAsString(placementInfo);
             } catch (IOException e) {
                 e.printStackTrace();
             }
         return result;
+    }
+
+    public int getIssueID() {
+        return issueID;
+    }
+
+    public void setIssueID(int issueID) {
+        this.issueID = issueID;
+    }
+
+    public BTIssue getIssue() {
+        if (issue == null) issue = GlobalVariables.getInstance().dao.getIssue(issueID);
+        return issue;
+    }
+
+    public void setIssue(BTIssue issue) {
+        this.issue = issue;
     }
 }

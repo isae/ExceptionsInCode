@@ -183,7 +183,7 @@ public class MyLineMarkerProvider extends IconLineMarkerProvider implements Dumb
     private HashMap<Integer, BTIssue> collectIssues(HashMap<Long, StackTraceElement> elements) {
         HashMap<Integer, BTIssue> result = new HashMap<Integer, BTIssue>();
         for (Map.Entry<Long, StackTraceElement> entry : elements.entrySet()) {
-            BTIssue issue = entry.getValue().getException().getIssue();//todo make a direct link
+            BTIssue issue = entry.getValue().getIssue();
             if (!result.containsKey(issue.getIssueID())) {
                 result.put(issue.getIssueID(), issue);
             }

@@ -2,6 +2,7 @@ package com.jetbrains.isaev.state;
 
 import com.jetbrains.isaev.GlobalVariables;
 import com.jetbrains.isaev.dao.ZipUtils;
+import com.jetbrains.isaev.issues.*;
 import com.jetbrains.isaev.ui.ParsedException;
 
 import java.io.Serializable;
@@ -157,5 +158,9 @@ public class BTIssue {
 
     public void setMustBeShown(boolean mustBeShown) {
         this.mustBeShown = mustBeShown;
+    }
+
+    public HashMap<Long, com.jetbrains.isaev.issues.StackTraceElement> getAllSTElements() {
+        return GlobalVariables.dao.getAllSTElements(issueID);
     }
 }

@@ -11,16 +11,11 @@ import com.jetbrains.isaev.ui.ParsedException;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.*;
-import org.springframework.jdbc.core.simple.SimpleJdbcCall;
 import org.springframework.jdbc.datasource.SimpleDriverDataSource;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 
 import javax.sql.rowset.serial.SerialClob;
-import java.io.BufferedReader;
-import java.io.Reader;
-import java.io.StringReader;
-import java.io.StringWriter;
 import java.sql.*;
 import java.util.*;
 
@@ -31,7 +26,7 @@ public class IssuesDAO {
 
     private static final String PATH_SEPARATOR = System.getProperty("file.separator");
     private static final String DB_NAME = "BTIssuesDB";
-    private static final int CURRENT_DATABASE_VERSION = 5;
+    private static final int CURRENT_DATABASE_VERSION = 6;
     private static final String STORAGE_FOLDER_PATH = GlobalVariables.getInstance().project.getBasePath() + PATH_SEPARATOR + ".idea" + PATH_SEPARATOR + "BTIssuesDB";
     private static final String ACCOUNTS_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS Accounts (" +
             "accountID INT  PRIMARY KEY  AUTO_INCREMENT, " +
@@ -66,6 +61,7 @@ public class IssuesDAO {
     private static final String ST_ELEMENTS_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS STElements (" +
             "stElementID IDENTITY, " +
             "exceptionID BIGINT, " +
+            "issueID INT, " +
             "declaringClass VARCHAR(255), " +
             "methodName VARCHAR(255), " +
             "fileName VARCHAR(255), " +
@@ -73,26 +69,35 @@ public class IssuesDAO {
             "anOrder TINYINT, " +
             "dndInfo CLOB, " +
             "onPlace BOOLEAN DEFAULT FALSE, " +
-            "FOREIGN KEY(exceptionID) REFERENCES Exceptions(exceptionID) ON DELETE CASCADE)";
+            "FOREIGN KEY(exceptionID) REFERENCES Exceptions(exceptionID) ON DELETE CASCADE, " +
+            "FOREIGN KEY(issueID) REFERENCES Issues(issueID) ON DELETE CASCADE)";
 
     protected static final Logger logger = Logger.getInstance(IssuesDAO.class);
     private static IssuesDAO instance;
     private static boolean dbChanged = false;
     JdbcTemplate db;
 
-    private static  CachedArrayList<BTIssue> issues;
-    private static CachedHashSet<BTAccount> accounts;
+    private static HashMap<Integer, BTIssue> cachedIssues;
+    HashSet<BTAccount> accounts;
     private static HashMap<Long, StackTraceElement> stElementsCache;
     private static RowMapper<StackTraceElement> stackTraceElementRowMapper = new RowMapper<StackTraceElement>() {
         @Override
         public StackTraceElement mapRow(ResultSet rs, int i) throws SQLException {
             long id = rs.getLong("stElementID");
             if (!stElementsCache.containsKey(id)) {
-                stElementsCache.put(id, new StackTraceElement(id, rs.getString("declaringClass"), rs.getString("methodName"), rs.getString("fileName"), rs.getInt("lineNumber"), rs.getLong("exceptionID"), rs.getByte("anOrder"), rs.getBoolean("onPlace"), getStringFromClob(rs.getClob("dndInfo"))));
+                stElementsCache.put(id, new StackTraceElement(id, rs.getInt("issueID"), rs.getString("declaringClass"), rs.getString("methodName"), rs.getString("fileName"), rs.getInt("lineNumber"), rs.getLong("exceptionID"), rs.getByte("anOrder"), rs.getBoolean("onPlace"), getStringFromClob(rs.getClob("dndInfo"))));
             }
             return stElementsCache.get(id);
         }
     };
+
+    public HashMap<Long, StackTraceElement> getAllSTElements(int issueID) {
+        HashMap<Long, StackTraceElement> result = new HashMap<Long, StackTraceElement>();
+        for (StackTraceElement el : stElementsCache.values()) {
+            if (el.getIssueID() == issueID) result.put(el.getID(), el);
+        }
+        return result;
+    }
 
 
     private class CachedArrayList<T> extends ArrayList<T> {
@@ -136,10 +141,11 @@ public class IssuesDAO {
             db.execute("SET COMPRESS_LOB DEFLATE");
         } else {
             if (knownVersion != CURRENT_DATABASE_VERSION) {
+                DatabaseMigrationScripts.db = db;
                 startMigrationToAnotherVersion(knownVersion);
             }
         }
-        issues = new CachedArrayList<BTIssue>();
+        cachedIssues = new HashMap<Integer, BTIssue>();
         accounts = new CachedHashSet<BTAccount>();
         stElementsCache = new HashMap<Long, StackTraceElement>();
     }
@@ -147,9 +153,7 @@ public class IssuesDAO {
     private void startMigrationToAnotherVersion(int oldVersion) {
         int index = oldVersion - 1;
         for (int i = index; i < CURRENT_DATABASE_VERSION - 1; i++) {
-            for (String command : DatabaseMigrationScripts.scripts[i]) {
-                db.update(command);
-            }
+            DatabaseMigrationScripts.scripts[i].run();
             ProjectData.setDbVersion(i + 2);
         }
     }
@@ -182,8 +186,11 @@ public class IssuesDAO {
             public BTIssue extractData(ResultSet rs) throws SQLException, DataAccessException {
                 boolean f = true;
                 if (rs.next()) {
-                    BTIssue issue1 = new BTIssue(rs.getInt("issueID"), getStringFromClob(rs.getClob("title")), getStringFromClob(rs.getClob("description")), rs.getTimestamp("lastUpdated"), rs.getString("number"), rs.getInt("projectID"), rs.getBoolean("mustBeShown"));
-                    return issue1;
+                    int id = rs.getInt("issueID");
+                    if (!cachedIssues.containsKey(id)) {
+                        cachedIssues.put(id, new BTIssue(id, getStringFromClob(rs.getClob("title")), getStringFromClob(rs.getClob("description")), rs.getTimestamp("lastUpdated"), rs.getString("number"), rs.getInt("projectID"), rs.getBoolean("mustBeShown")));
+                    }
+                    return cachedIssues.get(id);
                 } else {
                     return null;
                 }
@@ -203,7 +210,11 @@ public class IssuesDAO {
 
             @Override
             public BTIssue mapRow(ResultSet rs, int i) throws SQLException {
-                BTIssue issue = new BTIssue(rs.getInt("issueID"), getStringFromClob(rs.getClob("title")), getStringFromClob(rs.getClob("description")), rs.getTimestamp("lastUpdated"), rs.getString("number"), rs.getInt("projectID"), rs.getBoolean("mustBeShown"));
+                int id = rs.getInt("issueID");
+                if (!cachedIssues.containsKey(id)) {
+                    cachedIssues.put(id, new BTIssue(id, getStringFromClob(rs.getClob("title")), getStringFromClob(rs.getClob("description")), rs.getTimestamp("lastUpdated"), rs.getString("number"), rs.getInt("projectID"), rs.getBoolean("mustBeShown")));
+                }
+                BTIssue issue = cachedIssues.get(id);
                 if (!btIssues.containsKey(issue.hashCode())) btIssues.put(issue.hashCode(), issue);
                 issue = btIssues.get(issue.hashCode());
                 ParsedException exception = new ParsedException(rs.getInt("issueID"), rs.getString("name"), rs.getLong("exceptionID"), getStringFromClob(rs.getClob("message")));
@@ -211,7 +222,7 @@ public class IssuesDAO {
                     issue.getExceptions().put(exception.hashCode(), exception);
                 long stID = rs.getLong("stElementID");
                 if (!stElementsCache.containsKey(stID)) {
-                    stElementsCache.put(stID, new StackTraceElement(stID, rs.getString("declaringClass"), rs.getString("methodName"), rs.getString("fileName"), rs.getInt("lineNumber"), rs.getLong("exceptionID"), rs.getByte("anOrder"), rs.getBoolean("onPlace"), getStringFromClob(rs.getClob("dndInfo"))));
+                    stElementsCache.put(stID, new StackTraceElement(stID, rs.getInt("issueID"), rs.getString("declaringClass"), rs.getString("methodName"), rs.getString("fileName"), rs.getInt("lineNumber"), rs.getLong("exceptionID"), rs.getByte("anOrder"), rs.getBoolean("onPlace"), getStringFromClob(rs.getClob("dndInfo"))));
                 }
                 StackTraceElement element = stElementsCache.get(stID);
                 if (!exception.getStacktrace().containsKey(element.hashCode()))
@@ -230,7 +241,11 @@ public class IssuesDAO {
         List<BTIssue> result = db.query("SELECT * FROM Issues", (Object[]) null, new RowMapper<BTIssue>() {
             @Override
             public BTIssue mapRow(ResultSet rs, int i) throws SQLException {
-                return new BTIssue(rs.getInt("issueID"), getStringFromClob(rs.getClob("title")), getStringFromClob(rs.getClob("description")), rs.getTimestamp("lastUpdated"), rs.getString("number"), rs.getInt("projectID"), rs.getBoolean("mustBeShown"));
+                int id = rs.getInt("issueID");
+                if (!cachedIssues.containsKey(id)) {
+                    cachedIssues.put(id, new BTIssue(id, getStringFromClob(rs.getClob("title")), getStringFromClob(rs.getClob("description")), rs.getTimestamp("lastUpdated"), rs.getString("number"), rs.getInt("projectID"), rs.getBoolean("mustBeShown")));
+                }
+                return cachedIssues.get(id);
 
             }
         });
@@ -457,7 +472,7 @@ public class IssuesDAO {
                 db.update(new PreparedStatementCreator() {
                     @Override
                     public PreparedStatement createPreparedStatement(Connection con) throws SQLException {
-                        PreparedStatement statement = con.prepareStatement("INSERT INTO STElements (exceptionID,declaringClass,methodName,fileName, lineNumber, anOrder, onPlace, dndInfo) values (?,?,?,?,?,?, ?, ?)", Statement.RETURN_GENERATED_KEYS);
+                        PreparedStatement statement = con.prepareStatement("INSERT INTO STElements (exceptionID,declaringClass,methodName,fileName, lineNumber, anOrder, onPlace, dndInfo, issueID) values (?,?,?,?,?,?, ?, ?,?)", Statement.RETURN_GENERATED_KEYS);
                         statement.setLong(1, el.getExceptionID());
                         statement.setString(2, el.getDeclaringClass());
                         statement.setString(3, el.getMethodName());
@@ -466,6 +481,7 @@ public class IssuesDAO {
                         statement.setByte(6, el.getOrder());
                         statement.setBoolean(7, el.isOnPlace());
                         statement.setClob(8, getClobFromString(el.getWritablePlacementInfo()));
+                        statement.setInt(9, issueID);
                         return statement;
                     }
                 }, hold);
