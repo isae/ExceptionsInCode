@@ -30,6 +30,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
+import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -71,7 +72,7 @@ public class ReportedExceptionLineMarkerInfo extends MergeableLineMarkerInfo<Psi
                 IconProvider.getIcon(issues.size() > 1 ? IconProvider.IconRef.WARN_MULTIPLE : IconProvider.IconRef.WARN),
                 Pass.UPDATE_OVERRIDEN_MARKERS,
                 getMarkerTooltip(issues, type),
-                getNaviHandler(issues),
+                getNaviHandler(issues, editor.getContentComponent().getLocationOnScreen()),
                 GutterIconRenderer.Alignment.RIGHT);
         this.issues = issues;
         this.file = file;
@@ -87,9 +88,11 @@ public class ReportedExceptionLineMarkerInfo extends MergeableLineMarkerInfo<Psi
 
         private final HashMap<Integer, BTIssue> set;
         public ReportedExceptionLineMarkerInfo anchor;
+        private Point gutterLocation;
 
-        public MyNavigationHandler(HashMap<Integer, BTIssue> set) {
+        public MyNavigationHandler(HashMap<Integer, BTIssue> set, Point locationOnScreen) {
             this.set = set;
+            this.gutterLocation = locationOnScreen;
         }
 
         @Override
@@ -98,7 +101,9 @@ public class ReportedExceptionLineMarkerInfo extends MergeableLineMarkerInfo<Psi
             JBPopup popup = JBPopupFactory.getInstance().createListPopupBuilder(list).setCancelOnClickOutside(false).setCloseOnEnter(false).createPopup();
             list.setContainingPopup(popup);
             list.addListener();
-            popup.show(new RelativePoint(e));
+            Point p = e.getPoint();
+            p.x = gutterLocation.x;
+            popup.show(new RelativePoint(e.getComponent(), p));
 
         }
     }
@@ -109,8 +114,8 @@ public class ReportedExceptionLineMarkerInfo extends MergeableLineMarkerInfo<Psi
         return new MyDraggableGutterIconRenderer(this);
     }
 
-    private static GutterIconNavigationHandler<PsiElement> getNaviHandler(final HashMap<Integer, BTIssue> set) {
-        return new MyNavigationHandler(set);
+    private static GutterIconNavigationHandler<PsiElement> getNaviHandler(final HashMap<Integer, BTIssue> set, Point locationOnScreen) {
+        return new MyNavigationHandler(set, locationOnScreen);
     }
 
 

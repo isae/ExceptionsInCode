@@ -44,7 +44,6 @@ public class IssuesPopupList extends JBList {
         IssuesPopupList.this.addFocusListener(new FocusAdapter() {
             @Override
             public void focusLost(FocusEvent e) {
-                System.out.println("IssuesList focus lost: " + isBaloonShown);
                 if (!isBaloonShown) {
                     containingPopup.dispose();
                 }
@@ -86,67 +85,17 @@ public class IssuesPopupList extends JBList {
                         super.onClosed(event);
                     }
                 });
-                isBaloonShown = true;/*
-                IssuesPopupList.this.addFocusListener(new FocusAdapter() {
-                    @Override
-                    public void focusLost(FocusEvent e) {
-                        if (balloon.isDisposed()) {
-                            isBaloonShown = false;
-                            containingPopup.dispose();
-                        }
-                        super.focusLost(e);
-                    }
-                });*/
+                isBaloonShown = true;
                 content.panel1.registerKeyboardAction(new ActionListener() {
                     public void actionPerformed(ActionEvent e) {
-                        content.okButton.doClick();
+                        doOkAction(content, issue, popup);
                     }
                 }, KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0), JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
-               /* containingPopup.addListener(new JBPopupAdapter() {
-                    @Override
-                    public void onClosed(LightweightWindowEvent event) {
-                        if (content.panel1.isFocusOwner()) return;
-                        super.onClosed(event);
-                    }
-                });*/
-                content.panel1.addMouseListener(new MouseAdapter() {
-                    @Override
-                    public void mouseClicked(MouseEvent e) {
-                        IssuesPopupList.this.setVisible(true);
-                        super.mouseClicked(e);
-                    }
-                });
 
                 content.okButton.addMouseListener(new MouseAdapter() {
                     @Override
                     public void mouseClicked(MouseEvent e) {
-                        String text = content.textField1.getText();
-                        int currentRow = anchor.getLine();
-                        try {
-                            int row = Integer.parseInt(text) - 1;
-                            if (row != currentRow) {
-                                HashMap<Long, StackTraceElement> elMap = anchor.stElements;
-                                StackTraceElement element = null;
-                                for (StackTraceElement el : issue.getAllSTElements().values()) {
-                                    if (elMap.containsKey(el.getID())) element = el;
-                                }
-                                elMap = new HashMap<Long, StackTraceElement>();
-                                elMap.put(element.getID(), element);
-                                element.getPlacementInfo().getAbsolute().add(row);
-                                HashMap<Integer, BTIssue> isMap = new HashMap<Integer, BTIssue>();
-                                BTIssue is = element.getIssue();
-                                isMap.put(is.getIssueID(), is);
-                                ReportedExceptionLineMarkerInfo info = new ReportedExceptionLineMarkerInfo(anchor.getElement(), 0, elMap, isMap, anchor.file, anchor.getEditor(), ReportedExceptionLineMarkerInfo.Type.CLASS);
-                                info.updateUI(row);
-                                popup.closeOk(null);
-                                /*
-                                balloon.hide();*/
-                            } else {
-                                Notifications.Bus.notify(new com.intellij.notification.Notification("", "Cannot perform copying", "This is current row", NotificationType.WARNING));
-                            }
-                        } catch (NumberFormatException ex) {
-                            Notifications.Bus.notify(new com.intellij.notification.Notification("", "Cannot perform copying", "Not a number: " + text, NotificationType.WARNING));
-                        }
+                        doOkAction(content, issue, popup);
                     }
                 });
             }
@@ -166,6 +115,35 @@ public class IssuesPopupList extends JBList {
 
 
         });
+    }
+
+    public void doOkAction(CopyMarkerToLineBalloon content, BTIssue issue, JBPopup popup) {
+
+        String text = content.textField1.getText();
+        int currentRow = anchor.getLine();
+        try {
+            int row = Integer.parseInt(text) - 1;
+            if (row != currentRow) {
+                HashMap<Long, StackTraceElement> elMap = anchor.stElements;
+                StackTraceElement element = null;
+                for (StackTraceElement el : issue.getAllSTElements().values()) {
+                    if (elMap.containsKey(el.getID())) element = el;
+                }
+                elMap = new HashMap<Long, StackTraceElement>();
+                elMap.put(element.getID(), element);
+                element.getPlacementInfo().getAbsolute().add(row);
+                HashMap<Integer, BTIssue> isMap = new HashMap<Integer, BTIssue>();
+                BTIssue is = element.getIssue();
+                isMap.put(is.getIssueID(), is);
+                ReportedExceptionLineMarkerInfo info = new ReportedExceptionLineMarkerInfo(anchor.getElement(), 0, elMap, isMap, anchor.file, anchor.getEditor(), ReportedExceptionLineMarkerInfo.Type.CLASS);
+                info.updateUI(row);
+                popup.closeOk(null);
+            } else {
+                Notifications.Bus.notify(new com.intellij.notification.Notification("", "Cannot perform copying", "This is current row", NotificationType.WARNING));
+            }
+        } catch (NumberFormatException ex) {
+            Notifications.Bus.notify(new com.intellij.notification.Notification("", "Cannot perform copying", "Not a number: " + text, NotificationType.WARNING));
+        }
     }
 
     public JBPopup getContainingPopup() {
