@@ -89,14 +89,14 @@ public class MyLineMarkerProvider extends IconLineMarkerProvider implements Dumb
         if (alreadyDrawn.isEmpty()) {
             for (StackTraceElement stElement : elements) {
                 if (stElement.getPlacementInfo() == null) {
-                    PlacementInfo info = new PlacementInfo();
+                    PlacementInfo info = new PlacementInfo(stElement);
                     stElement.setPlacementInfo(info);
                 }
                 PlacementInfo plInfo = stElement.getPlacementInfo();
-                if (stElement.getPlacementInfo().methods.isEmpty()) {
-                    plInfo.methods.put(getMethodSignatureString(method), 0);//todo heuristics
+                if (stElement.getPlacementInfo().getMethods().isEmpty()) {
+                    plInfo.getMethods().put(getMethodSignatureString(method), 0);//todo heuristics
                 }
-                Integer row = plInfo.methods.get(getMethodSignatureString(method));
+                Integer row = plInfo.getMethods().get(getMethodSignatureString(method));
                 if (row != null) {
                     int absoluteRow = getRowByElement(method, currentEditor) + row;
                     checkMapToMap(newMarkersFill, absoluteRow);
@@ -147,15 +147,15 @@ public class MyLineMarkerProvider extends IconLineMarkerProvider implements Dumb
         if (alreadyDrawn.isEmpty()) {
             for (StackTraceElement stElement : elements) {
                 if (stElement.getPlacementInfo() == null) {
-                    PlacementInfo info = new PlacementInfo();
+                    PlacementInfo info = new PlacementInfo(stElement);
                     stElement.setPlacementInfo(info);
                 }
                 PlacementInfo plInfo = stElement.getPlacementInfo();
-                if (plInfo.absolute.isEmpty()) {
+                if (plInfo.getAbsolute().isEmpty()) {
                     int row = getRowByElement(element, currentEditor);
-                    plInfo.absolute.add(row);
+                    plInfo.getAbsolute().add(row);
                 }
-                for (Integer absoluteRow : plInfo.absolute) {
+                for (Integer absoluteRow : plInfo.getAbsolute()) {
                     checkMapToMap(newMarkersFill, absoluteRow);
                     //todo check if line marker info already exists on this row
                     HashMap<Long, StackTraceElement> info = newMarkersFill.get(absoluteRow);

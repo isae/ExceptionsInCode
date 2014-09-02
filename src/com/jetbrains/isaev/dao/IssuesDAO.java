@@ -381,7 +381,11 @@ public class IssuesDAO {
 
     public void saveState() {
         for (StackTraceElement element : stElementsCache.values()) {
-            db.update("UPDATE STElements SET dndInfo = ?, onPlace = ? WHERE stElementID = ?", getClobFromString(element.getWritablePlacementInfo()), true, element.getID());
+            if (element.mustBeUpdatedOnClose) {
+                Clob json = getClobFromString(element.getWritablePlacementInfo());
+                db.update("UPDATE STElements SET dndInfo = ?, onPlace = ? WHERE stElementID = ?", json, true, element.getID());
+                element.mustBeUpdatedOnClose = false;
+            }
         }
     }
 
@@ -465,7 +469,8 @@ public class IssuesDAO {
                 }
             }, holder);
             e.setExceptionID(holder.getKey().longValue());
-            StackTraceElement[] elements = e.getStacktrace().values().toArray(new StackTraceElement[0]);
+            Collection<StackTraceElement> values = e.getStacktrace().values();
+            StackTraceElement[] elements = values.toArray(new StackTraceElement[values.size()]);
             for (final StackTraceElement el : elements) {
                 el.setExceptionID(e.getExceptionID());
                 KeyHolder hold = new GeneratedKeyHolder();

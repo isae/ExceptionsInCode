@@ -36,16 +36,7 @@ public class MyProjectComponent implements ProjectComponent {
         variables.setDao(IssuesDAO.getInstance());
     }
 
-    public void initComponent() {/*
-        EditorActionManager.getInstance().setActionHandler(IdeActions.ACTION_EDITOR_ENTER, new EditorActionHandler() {
-            private EditorActionHandler handler = EditorActionManager.getInstance().getActionHandler(IdeActions.ACTION_EDITOR_ENTER);
-            protected void doExecute(Editor editor, @Nullable Caret caret, DataContext dataContext) {
-                HintManager hints = HintManager.getInstance();
-                hints.showErrorHint(editor, "HEY YOU LOHPIDOR");
-                handler.execute(editor, caret, dataContext);
-                super.doExecute(editor, caret, dataContext);
-            }
-        });*/
+    public void initComponent() {
         // TODO: insert component initialization logic here
     }
 

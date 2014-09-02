@@ -95,7 +95,7 @@ public class ReportedExceptionLineMarkerInfo extends MergeableLineMarkerInfo<Psi
         @Override
         public void navigate(MouseEvent e, PsiElement elt) {
             IssuesPopupList list = new IssuesPopupList(anchor);
-            JBPopup popup = JBPopupFactory.getInstance().createListPopupBuilder(list).setCloseOnEnter(false).createPopup();
+            JBPopup popup = JBPopupFactory.getInstance().createListPopupBuilder(list).setCancelOnClickOutside(false).setCloseOnEnter(false).createPopup();
             list.setContainingPopup(popup);
             list.addListener();
             popup.show(new RelativePoint(e));
@@ -152,19 +152,21 @@ public class ReportedExceptionLineMarkerInfo extends MergeableLineMarkerInfo<Psi
     }
 
     public int getLine() {
+        int result = -2;
         if (myHighlighter != null) {
-            return editor.offsetToLogicalPosition(myHighlighter.getAffectedAreaStartOffset()).line;
-        } else return editor.offsetToLogicalPosition(getElement().getTextOffset()).line;
+            result = editor.offsetToLogicalPosition(myHighlighter.getAffectedAreaStartOffset()).line;
+        } else result = editor.offsetToLogicalPosition(getElement().getTextOffset()).line;
+        currentLine = result;
+        return currentLine;
     }
 
     public void updateSTElementsPlacementInfo() {
         int line = getLine();
         for (StackTraceElement element : stElements.values()) {
             PlacementInfo info = element.getPlacementInfo();
-            if (type == Type.CLASS) {
-                if (currentLine != -1)
-                    info.absolute.remove(currentLine);
-                info.absolute.add(line);
+            if (type == Type.CLASS && currentLine != line) {
+                info.getAbsolute().remove(currentLine);
+                info.getAbsolute().add(line);
             }
         }
     }
@@ -179,11 +181,11 @@ public class ReportedExceptionLineMarkerInfo extends MergeableLineMarkerInfo<Psi
             PlacementInfo info = element.getPlacementInfo();
             if (type == Type.METHOD) {
                 String signature = LineMarkerUtils.getMethodSignatureString((com.intellij.psi.PsiMethod) getElement());
-                info.methods.put(signature, relativePosition);
+                info.getMethods().put(signature, relativePosition);
             } else {
                 if (initialLine != -1)
-                    info.absolute.remove(initialLine);
-                info.absolute.add(currentLine);
+                    info.getAbsolute().remove(initialLine);
+                info.getAbsolute().add(currentLine);
             }
         }
         final ReportedExceptionLineMarkerInfo info = this;

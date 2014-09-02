@@ -3,6 +3,7 @@ package com.jetbrains.isaev.issues;
 import com.jetbrains.isaev.GlobalVariables;
 import com.jetbrains.isaev.state.BTIssue;
 import com.jetbrains.isaev.ui.ParsedException;
+import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -15,7 +16,7 @@ import java.util.Map;
 /**
  * Created by Ilya.Isaev on 30.07.2014.
  */
-
+@JsonIgnoreProperties({"mustBeUpdatedOnClose"})
 public class StackTraceElement {
     @NotNull
     private String declaringClass;
@@ -37,6 +38,7 @@ public class StackTraceElement {
     private int issueID;
     private BTIssue issue;
     private static final ObjectMapper mapper = new ObjectMapper();
+    public boolean mustBeUpdatedOnClose = false;
 
     public StackTraceElement(long stElementID, int issueID, String declaringClass, String methodName, String fileName, int lineNumber, long exceptionID, byte order, boolean onPlace, String placementJson) {
         this(stElementID, declaringClass, methodName, fileName, lineNumber);
@@ -189,6 +191,7 @@ public class StackTraceElement {
 
     public void setOnPlace(boolean onPlace) {
         this.onPlace = onPlace;
+        this.mustBeUpdatedOnClose = true;
     }
 
     public PlacementInfo getPlacementInfo() {
@@ -197,6 +200,7 @@ public class StackTraceElement {
 
     public void setPlacementInfo(@Nullable PlacementInfo placementInfo) {
         this.placementInfo = placementInfo;
+        this.mustBeUpdatedOnClose = true;
     }
 
     public String getWritablePlacementInfo() {
