@@ -25,7 +25,7 @@ import java.util.*;
 public class YouTrackIssuesDownloadStrategy extends IssuesDownloadStrategy {
     private static final int ISSUES_AT_ONE_TIME = 1000;
     public static volatile boolean alreadyRunning = false;
-    private static final java.lang.String YOUTRACK_DATE_FORMAT_STRING = "yyyy-MM-dd'T'hh:mm:ss";
+    private static final java.lang.String YOUTRACK_DATE_FORMAT_STRING = "yyyy-MM-dd'T'HH:mm:ss";
     //  private static final java.lang.String STATE = " %23Open %23%7BIn Progress%7D %23Fixed ";
     private static final java.lang.String STATE = " %23Open %23%7BIn Progress%7D  ";
     //  private static final java.lang.String STATE = " %23%7BIn Progress%7D ";
