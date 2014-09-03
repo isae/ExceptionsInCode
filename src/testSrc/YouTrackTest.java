@@ -17,6 +17,7 @@ public class YouTrackTest {
     private static final YouTrackClientFactory clientFactory = new YouTrackClientFactory();
     private static final String JETBRAINS_YOUTRACK_URL = "http://youtrack.jetbrains.com";
     private static final String MY_YOUTRACK_URL = "http://ololo.myjetbrains.com/youtrack";
+    private static final String LOCAL_YOUTRACK_URL = "http://localhost:80";
     private static PrintWriter out;
 
     public static List<YouTrackIssue> getIssuesAvoidBugged(String projectName,
@@ -44,25 +45,27 @@ public class YouTrackTest {
 
     public static void main(String[] args) {
 
-        YouTrackClient client = clientFactory.getClient(MY_YOUTRACK_URL);
-        client.login("xottab1", "isaev123");
-        YouTrackProject proj = null;
-        for (YouTrackProject project : client.getProjects()) {
-            if (project.getProjectFullName().equals("Test")) proj = project;
-            // out.println("full " + project.getProjectFullName() + " short " + project.getProjectShortName());
-        }
-        YouTrackCustomFieldPrototype prototype = new YouTrackCustomFieldPrototype("TestTest", YouTrackCustomFieldType.STRING, false, false, false);
+        YouTrackClient client = clientFactory.getClient(LOCAL_YOUTRACK_URL);
+        client.login("root", "шыфум123");
+        YouTrackIssue issue = client.getIssue("TST-4");
+        List<YouTrackCustomField> field = client.getProjectCustomFields("TST");
+        // YouTrackProject proj = null;
+        //for (YouTrackProject project : client.getProjects()) {
+        //   if (project.getProjectFullName().equals("Test")) proj = project;
+        // out.println("full " + project.getProjectFullName() + " short " + project.getProjectShortName());
+        //}
+        //YouTrackCustomFieldPrototype prototype = new YouTrackCustomFieldPrototype("TestTest", YouTrackCustomFieldType.STRING, false, false, false);
         //client.putNewCustomFieldPrototype(prototype);
         // client.attachCustomFieldToProject(proj, prototype.getName(), "Empty");
         // proj.updateCustomFields(client);
-        Collection<YouTrackCustomField> fields = client.getProjectCustomFields(proj.getProjectShortName());
-        List<YouTrackProject> projects = client.getProjects();
-        for (YouTrackProject project : projects) {
-            if (project.getProjectShortName().equals("IDEA")) proj = project;
-            // out.println("full " + project.getProjectFullName() + " short " + project.getProjectShortName());
-        }
-        YouTrackIssue issue = client.getIssue("IDEA-95925");
-        List<ParsedException> exceptions = StacktraceProvider.getTestInstance().parseAllTestExceptions(issue.getSummary() + " " + issue.getDescription());
+        //Collection<YouTrackCustomField> fields = client.getProjectCustomFields(proj.getProjectShortName());
+        //List<YouTrackProject> projects = client.getProjects();
+        //for (YouTrackProject project : projects) {
+        //   if (project.getProjectShortName().equals("IDEA")) proj = project;
+        // out.println("full " + project.getProjectFullName() + " short " + project.getProjectShortName());
+        //}
+        //YouTrackIssue issue = client.getIssue("IDEA-95925");
+        //List<ParsedException> exceptions = StacktraceProvider.getTestInstance().parseAllTestExceptions(issue.getSummary() + " " + issue.getDescription());
         // out.println("\n\n\n");
        /* List<YouTrackIssue> issues = new ArrayList<>(110000);
         StacktraceProvider provider = StacktraceProvider.getInstance();

@@ -1,5 +1,6 @@
 package com.jetbrains.isaev.ui;
 
+import com.intellij.ui.CellRendererPanel;
 import com.intellij.ui.components.JBCheckBox;
 import com.jetbrains.isaev.state.BTProject;
 
@@ -18,7 +19,8 @@ public class ProjectsChooseListRenderer implements ListCellRenderer {
     public Component getListCellRendererComponent(JList list, Object val, int index, boolean isSelected, boolean cellHasFocus) {
         SelectableItem<BTProject> value = (SelectableItem<BTProject>) val;
         if (value.checkbox == null) {
-            final JBCheckBox checkBox = new JBCheckBox(value.value.getFullName());
+            //final JBCheckBox checkBox = new JBCheckBox(value.value.getFullName());
+            final JBCheckBox checkBox = new JBCheckBox();
             value.checkbox = checkBox;
             checkBox.addActionListener(new ActionListener() {
                 @Override
@@ -28,7 +30,13 @@ public class ProjectsChooseListRenderer implements ListCellRenderer {
                 }
             });
         }
-        return value.checkbox;
+        JPanel container = new JPanel();
+       // container.setAlignmentX(Component.LEFT_ALIGNMENT);
+        container.add(value.checkbox);
+        JLabel label = new JLabel(value.value.getFullName());
+        label.setAlignmentY(Component.TOP_ALIGNMENT);
+        container.add(label);
+        return container;
     }
 
 }

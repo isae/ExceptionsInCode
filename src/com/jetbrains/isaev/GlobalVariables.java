@@ -1,4 +1,5 @@
 package com.jetbrains.isaev;
+
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.project.Project;
@@ -15,6 +16,7 @@ import java.util.concurrent.*;
  */
 public class GlobalVariables {
     private static GlobalVariables instance;
+    public static final String YOUTRACK_CUSTOM_FIELD_DEFAULT_NAME = "Placement in code";
 
     public static Project project;
     public static IssuesDAO dao;

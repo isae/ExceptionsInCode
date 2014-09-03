@@ -3,6 +3,8 @@ package com.jetbrains.isaev.ui;
 import com.intellij.ui.components.JBCheckBox;
 import com.jetbrains.isaev.state.BTProject;
 
+import java.awt.*;
+
 /**
  * User: Xottab
  * Date: 29.07.2014
@@ -21,6 +23,8 @@ public class SelectableItem<T> {
     }
 
     public static JBCheckBox getCheckBox(BTProject project) {
-        return new JBCheckBox(project.getFullName(), project.isMustBeUpdated());
+        JBCheckBox result = new JBCheckBox(/*project.getFullName(), project.isMustBeUpdated()*/);
+        result.setAlignmentY(Component.TOP_ALIGNMENT);
+        return result;
     }
 }
