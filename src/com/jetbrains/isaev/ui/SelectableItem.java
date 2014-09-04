@@ -3,28 +3,48 @@ package com.jetbrains.isaev.ui;
 import com.intellij.ui.components.JBCheckBox;
 import com.jetbrains.isaev.state.BTProject;
 
+import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 /**
  * User: Xottab
  * Date: 29.07.2014
  */
-public class SelectableItem<T> {
-    public T value;
+public class SelectableItem {
+    public BTProject project;
     public JBCheckBox checkbox;
+    private String customFieldName;
 
-    public SelectableItem(T project) {
-        this.value = project;
+    public SelectableItem(BTProject project) {
+        this.project = project;
+        this.checkbox = getCheckBox(project);
     }
 
-    public SelectableItem(T value, JBCheckBox checkbox) {
-        this.value = value;
-        this.checkbox = checkbox;
-    }
-
-    public static JBCheckBox getCheckBox(BTProject project) {
-        JBCheckBox result = new JBCheckBox(/*project.getFullName(), project.isMustBeUpdated()*/);
-        result.setAlignmentY(Component.TOP_ALIGNMENT);
+    public static JBCheckBox getCheckBox(final BTProject project) {
+        JBCheckBox result = new JBCheckBox();
+        result.setAlignmentX(Component.LEFT_ALIGNMENT);
+        result.setAlignmentY(Component.CENTER_ALIGNMENT);
+        result.setSelected(project.isMustBeUpdated());
+        result.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                project.setMustBeUpdated(!project.isMustBeUpdated());
+                super.mouseClicked(e);
+            }
+        });
         return result;
+    }
+
+    public String getCustomFieldName() {
+        if (customFieldName == null) return "none";
+        return customFieldName;
+    }
+
+    public void setCustomFieldName(String customFieldName) {
+        this.customFieldName = customFieldName;
     }
 }

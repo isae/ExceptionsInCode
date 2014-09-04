@@ -1,13 +1,13 @@
 package com.jetbrains.isaev.ui;
 
 import com.intellij.CommonBundle;
-import com.intellij.notification.Notification;
 import com.intellij.notification.NotificationType;
 import com.intellij.notification.Notifications;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.ui.DialogWrapper;
+import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.util.SystemInfo;
 import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBList;
@@ -29,11 +29,10 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import java.awt.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 /**
  * User: Xottab
@@ -43,7 +42,22 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
     //static int lastSelectedPos = -1;
     private static YouTrackClientFactory clientFactory;
     private static DefaultListModel model = new DefaultListModel();
-    private static DefaultListModel projectsModel = new DefaultListModel();
+
+    static class MyDefaultTableModel extends DefaultTableModel {
+        @Override
+        public Class<?> getColumnClass(int columnIndex) {
+            return SelectableItem.class;
+        }
+    }
+
+    private static DefaultTableModel projectsModel = new MyDefaultTableModel();
+
+    static {
+        projectsModel.addColumn("");
+        projectsModel.addColumn("Project name");
+        projectsModel.addColumn("Custom field");
+    }
+
     private static DefaultComboBoxModel accountTypeModel = new DefaultComboBoxModel();
 
     static {
@@ -77,7 +91,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
     private JTextField textField2;
     private JButton testButton;
     private JBList accountsUIList;
-    private JBList projectsList;
+    private JTable projectsList;
     private JButton processIssuesButton;
     private JLabel projectsListLabel;
     private ActionLink actionLink1;
@@ -97,7 +111,6 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
         comboBox1.setRenderer(new BTAccountIconListRenderer());
         clientFactory = new YouTrackClientFactory();
         setTitle("Sources of Reports");
-
         setModal(true);
         //textField1.setText("http://youtrack.jetbrains.com");
         //textField2.setText("Ilya.Isaev@jetbrains.com");
@@ -114,7 +127,25 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
         accountsUIList.setModel(model);
         accountsUIList.getSelectionModel().setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         accountsUIList.setCellRenderer(new ExceptionsSourceCellRenderer());
-        projectsList.setCellRenderer(new ProjectsChooseListRenderer());
+        ProjectListChooser chooser = new ProjectListChooser();
+        chooser.setHorizontalTextPosition(SwingConstants.CENTER);
+        projectsList.setDefaultRenderer(SelectableItem.class, chooser);
+        projectsList.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                int row = projectsList.rowAtPoint(e.getPoint());
+                int col = projectsList.columnAtPoint(e.getPoint());
+                SelectableItem item = (SelectableItem) projectsModel.getValueAt(row, 1);
+                if (col == 0) {
+                    item.checkbox.setSelected(!item.checkbox.isSelected());
+                    item.project.setMustBeUpdated(item.checkbox.isSelected());
+                } else if (col == 2) {
+                    Messages.showInfoMessage("LOH!", "PIDR~!");
+                }
+                projectsList.repaint();
+            }
+        });
+        // projectsList.getColumnModel().getColumn(0).setMinWidth(-1);
         accountsUIList.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -128,7 +159,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
                 //Messages.showInfoMessage("LALA ", prevSelectedIndex+"     "+tmp);
                 prevSelectedIndex = tmp;
                 if (tmp != -1) {
-                    projectsModel.clear();
+                    projectsModel.setRowCount(0);
                     if (model.size() > 0) {
                         BTAccount account = (BTAccount) model.get(accountsUIList.getSelectedIndex());
                         textField1.setText(account.getDomainName());
@@ -138,7 +169,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
                         textField2.setEnabled(!checkBox1.isSelected());
                         passwordField1.setEnabled(!checkBox1.isSelected());
                         for (BTProject project : account.getProjects()) {
-                            projectsModel.addElement(new SelectableItem<BTProject>(project, SelectableItem.getCheckBox(project)));
+                            projectsModel.addRow(new SelectableItem[]{null, new SelectableItem(project), null});
                         }
                     }
                     projectsList.setModel(projectsModel);
@@ -184,7 +215,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
                     for (YouTrackProject project : projects) {
                         BTProject wrapper = new BTProject(account, project.getProjectFullName(), project.getProjectShortName());
                         if (!account.getProjects().contains(wrapper)) {
-                            projectsModel.addElement(new SelectableItem<BTProject>(wrapper));
+                            projectsModel.addRow(new SelectableItem[]{new SelectableItem(wrapper)});
                             account.getProjects().add(wrapper);
                         }
                     }
@@ -218,19 +249,24 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
             }
         });
 
-        projectsList.addMouseListener(new MouseAdapter() {
+       /* projectsList.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                int index = projectsList.locationToIndex(e.getPoint());
-                if (index >= 0 && index < projectsList.getModel().getSize()) {
-                    SelectableItem<BTProject> item = (SelectableItem<BTProject>) projectsList.getModel().getElementAt(index);
-                    item.checkbox.setSelected(!item.checkbox.isSelected());
-                    item.value.setMustBeUpdated(item.checkbox.isSelected());
-                    Rectangle rect = projectsList.getCellBounds(index, index);
-                    projectsList.repaint();
+                int index = projectsList.rowAtPoint(e.getPoint());
+                if (index >= 0 && index < projectsList.getModel().getRowCount()) {
+                    SelectableItem item = (SelectableItem) projectsList.getModel().getElementAt(index);
+                  //  Rectangle rect = new Rectangle(item.checkbox.getLocationOnScreen(), new Dimension(item.checkbox.getWidth(), item.checkbox.getHeight()));
+                    //int x = e.getXOnScreen();
+                   // int y = e.getYOnScreen();
+                   // if (rect.contains(x, y)) {
+                        item.checkbox.setSelected(!item.checkbox.isSelected());
+                        item.project.setMustBeUpdated(!item.project.isMustBeUpdated());
+                        projectsList.repaint();
+                   // }
+                   // System.out.println("Project must be updated: " + item.project.getFullName() + " " + item.project.isMustBeUpdated());
                 }
             }
-        });
+        });*/
 
         contentPane.registerKeyboardAction(new ActionListener() {
             public void actionPerformed(ActionEvent e) {

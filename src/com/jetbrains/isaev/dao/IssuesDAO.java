@@ -354,28 +354,30 @@ public class IssuesDAO {
 
     private void updateProjects(int accountID, List<BTProject> projects) {
         for (BTProject p : projects) {
-            List<BTProject> prs = db.query("SELECT * FROM Projects WHERE accountID= ? AND shortName = ? AND longName = ? ", new Object[]{accountID, p.getShortName(), p.getFullName()}, new RowMapper<BTProject>() {
-                @Override
-                public BTProject mapRow(ResultSet rs, int i) throws SQLException {
-                    int projectID = rs.getInt("projectID");
-                    String shortName = rs.getString("shortName");
-                    String longName = rs.getString("longName");
-                    return new BTProject(shortName, longName);
-                }
-            });
-            if (prs.size() == 0) {
-                db.update("INSERT INTO Projects ( accountID, shortName, longName, lastUpdated, mustBeUpdated) values (?,?,?,?, ?)", accountID, p.getShortName(), p.getFullName(), p.getLastUpdated(), p.isMustBeUpdated());
-                p.setProjectID(db.query("SELECT projectID FROM Projects WHERE (accountID = ? AND shortName = ? AND longName = ? )", new Object[]{accountID, p.getShortName(), p.getFullName()}, new ResultSetExtractor<Integer>() {
+           // if (p.isMustBeUpdated()) {
+                List<BTProject> prs = db.query("SELECT * FROM Projects WHERE accountID= ? AND shortName = ? AND longName = ? ", new Object[]{accountID, p.getShortName(), p.getFullName()}, new RowMapper<BTProject>() {
                     @Override
-                    public Integer extractData(ResultSet rs) throws SQLException, DataAccessException {
-                        rs.next();
-                        return rs.getInt(1);
-
+                    public BTProject mapRow(ResultSet rs, int i) throws SQLException {
+                        int projectID = rs.getInt("projectID");
+                        String shortName = rs.getString("shortName");
+                        String longName = rs.getString("longName");
+                        return new BTProject(shortName, longName);
                     }
-                }));
-            } else {
-                db.update("UPDATE Projects SET mustBeUpdated = ? WHERE projectID = ?", p.isMustBeUpdated(), p.getProjectID());
-            }
+                });
+                if (prs.size() == 0) {
+                    db.update("INSERT INTO Projects ( accountID, shortName, longName, lastUpdated, mustBeUpdated) values (?,?,?,?, ?)", accountID, p.getShortName(), p.getFullName(), p.getLastUpdated(), p.isMustBeUpdated());
+                    p.setProjectID(db.query("SELECT projectID FROM Projects WHERE (accountID = ? AND shortName = ? AND longName = ? )", new Object[]{accountID, p.getShortName(), p.getFullName()}, new ResultSetExtractor<Integer>() {
+                        @Override
+                        public Integer extractData(ResultSet rs) throws SQLException, DataAccessException {
+                            rs.next();
+                            return rs.getInt(1);
+
+                        }
+                    }));
+                } else {
+                    db.update("UPDATE Projects SET mustBeUpdated = ? WHERE projectID = ?", p.isMustBeUpdated(), p.getProjectID());
+                }
+            //}
         }
     }
 
