@@ -7,11 +7,12 @@ import com.jetbrains.isaev.integration.IssuesDownloadStrategy;
 import com.jetbrains.isaev.integration.youtrack.client.YouTrackClient;
 import com.jetbrains.isaev.integration.youtrack.client.YouTrackClientFactory;
 import com.jetbrains.isaev.integration.youtrack.client.YouTrackIssue;
-import com.jetbrains.isaev.issues.StacktraceProvider;
+import com.jetbrains.isaev.issues.*;
 import com.jetbrains.isaev.state.BTAccount;
 import com.jetbrains.isaev.state.BTIssue;
 import com.jetbrains.isaev.state.BTProject;
 import com.jetbrains.isaev.ui.ParsedException;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.jetbrains.annotations.NotNull;
 
 import java.sql.Timestamp;
@@ -30,6 +31,7 @@ public class YouTrackIssuesDownloadStrategy extends IssuesDownloadStrategy {
     private static final java.lang.String STATE = " %23Open %23%7BIn Progress%7D  ";
     //  private static final java.lang.String STATE = " %23%7BIn Progress%7D ";
     private static IssuesDAO dao = GlobalVariables.getInstance().dao;
+    private static final ObjectMapper mapper = new ObjectMapper();
     private static StacktraceProvider provider = StacktraceProvider.getInstance();
     private static long to;
     private static long from;
@@ -63,9 +65,30 @@ public class YouTrackIssuesDownloadStrategy extends IssuesDownloadStrategy {
     }
 
     BTIssue processIssue(BTProject pr, YouTrackIssue issue, Map<String, YouTrackIssue> mappedIssues) {
+        boolean f = true;
         Map<Integer, ParsedException> parsedExceptions = provider.parseAllExceptions(issue.getSummary() + " " + issue.getDescription());
         if (parsedExceptions.size() != 0) {
+            List<String> customFieldValues = null;
+            if (pr.getCustomFieldName() != null) {
+                customFieldValues = issue.getCustomFieldValue(pr.getCustomFieldName());
+            }
             BTIssue is = new BTIssue();
+            String placementJson = null;
+            if (customFieldValues != null && customFieldValues.size() == 1) {
+                placementJson = customFieldValues.get(0);
+            }
+            if (placementJson != null) {
+                try {
+                    IssueCustomFieldPlacementInfo info = mapper.readValue(placementJson, IssueCustomFieldPlacementInfo.class);
+                    for (ParsedException exception : parsedExceptions.values())
+                        for (com.jetbrains.isaev.issues.StackTraceElement element : exception.getStacktrace().values()) {
+                            if (info.getIssueInfo().containsKey(element.hashCode())) {
+                                element.setPlacementInfo(info.getIssueInfo().get(element.hashCode()));
+                            }
+                        }
+                } catch (Exception e) {
+                }
+            }
             is.setProjectID(pr.getProjectID());
             for (ParsedException ex : parsedExceptions.values()) ex.setIssue(is);
             is.setDescription(mappedIssues.get(issue.getId()).getDescription().replaceAll("<script [^<]+</script>", ""));

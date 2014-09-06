@@ -27,14 +27,13 @@ public class ProjectListChooser extends DefaultTableCellRenderer {
     private static final JBLabel customFieldLabel = new JBLabel("Custom field: ");
 
 
-
     @Override
     public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
         Component result = null;
         SelectableItem item = (SelectableItem) table.getModel().getValueAt(row, 1);
         switch (column) {
             case 0: {
-                result = item.checkbox;
+                result = (JBCheckBox) value;
                 break;
             }
             case 1: {
@@ -47,14 +46,15 @@ public class ProjectListChooser extends DefaultTableCellRenderer {
                 break;
             }
             case 2: {
-                ActionLink actionLink = new ActionLink(item.getCustomFieldName(), new AnAction() {
+              /*  ActionLink actionLink = new ActionLink(item.getCustomFieldName(), new AnAction() {
                     @Override
                     public void actionPerformed(AnActionEvent anActionEvent) {
                         Messages.showInfoMessage("LOH", "PIDR!");
                     }
-                });
-                result=actionLink;
-                actionLink.setAlignmentX(RIGHT);
+                });*/
+                JLabel link = (JLabel) value;
+                link.setAlignmentX(RIGHT);
+                result = link;
                 break;
             }
         }

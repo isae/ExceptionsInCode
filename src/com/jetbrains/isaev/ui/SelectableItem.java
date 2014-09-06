@@ -17,7 +17,6 @@ import java.awt.event.MouseEvent;
 public class SelectableItem {
     public BTProject project;
     public JBCheckBox checkbox;
-    private String customFieldName;
 
     public SelectableItem(BTProject project) {
         this.project = project;
@@ -40,11 +39,8 @@ public class SelectableItem {
     }
 
     public String getCustomFieldName() {
-        if (customFieldName == null) return "none";
-        return customFieldName;
+        if (project.getCustomFieldName() == null) return "none";
+        return project.getCustomFieldName();
     }
 
-    public void setCustomFieldName(String customFieldName) {
-        this.customFieldName = customFieldName;
-    }
 }

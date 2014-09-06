@@ -1,6 +1,7 @@
 package com.jetbrains.isaev.ui;
 
 import com.intellij.openapi.util.IconLoader;
+import com.intellij.util.ui.AnimatedIcon;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
 
@@ -21,7 +22,13 @@ public class IconProvider {
      * @return the loaded icon
      */
     public static Icon getIcon(@NotNull IconRef iconRef) {
-        return IconLoader.getIcon(PACKAGE_ROOT + "/" + iconRef.imgName + ".png");
+        return IconLoader.getIcon(getIconUrl(iconRef));
+    }
+
+    public static String getIconUrl(IconRef iconRef) {
+        String tmp = PACKAGE_ROOT + "/" + iconRef.imgName;
+        if (iconRef != IconRef.LOADING) tmp += ".png";
+        return tmp;
     }
 
     /**
@@ -34,7 +41,8 @@ public class IconProvider {
         WARN("warn"),
         WARN_MULTIPLE("warn_mult"),
         JIRA_SMALL("jira_icon_small"),
-        YOUTRACK_SMALL("youtrack_small");
+        YOUTRACK_SMALL("youtrack_small"),
+        LOADING("loading.gif");
 
         private final String imgName;
 

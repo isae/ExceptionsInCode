@@ -45,9 +45,9 @@ public class YouTrackClient {
         if (username == null || password == null || "".equals(username) || "".equals(password)) {
             throw new RuntimeException("Failed : NULL username or password ");
         } else {
-            WebResource resource= service.path("/user/login").queryParam("login", username)
+            WebResource resource = service.path("/user/login").queryParam("login", username)
                     .queryParam("password", password);
-            System.out.println("REQUEST IS: "+resource.toString());
+            System.out.println("REQUEST IS: " + resource.toString());
             checkClientResponse(
                     resource.post(ClientResponse.class), 200, "Failed to login");
         }
@@ -609,6 +609,22 @@ public class YouTrackClient {
         }
     }
 
+
+    public void updateIssueSingleField(YouTrackIssue issue, String fieldName, LinkedList<String> newFieldValues) {
+        if (issue.getId() != null) {
+            StringBuilder builder = new StringBuilder("{"+fieldName+"}");
+            builder.append(" ");
+            for (String value : newFieldValues) {
+                builder.append(value).append(" ");
+            }
+            this.applyCommand(issue.getId(), builder.toString());
+
+        } else {
+            throw new RuntimeException("Null target issue id while update issue.");
+        }
+
+    }
+
     /**
      * If issue not update fully, make incomplete update
      */
@@ -628,7 +644,7 @@ public class YouTrackClient {
             for (String customFieldName : newIssue.getCustomFieldsValues().keySet()) {
 
                 if (!newIssue.isCustomFieldsDataConsistent(customFieldName)) {
-                    return;
+                    continue;
                 }
                 YouTrackCustomField customFieldInfo = newIssue.getCustomFieldInfo(customFieldName);
 
@@ -746,6 +762,7 @@ public class YouTrackClient {
         ClientResponse response =
                 checkClientResponse(resource.put(ClientResponse.class, ""), 201, "Failed to attach customField to project");
     }
+
 
     @XmlRootElement(name = "int")
     private static class XmlNumberOfIssuesParser {

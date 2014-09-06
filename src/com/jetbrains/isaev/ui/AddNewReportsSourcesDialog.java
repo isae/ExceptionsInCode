@@ -7,8 +7,11 @@ import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.progress.ProgressManager;
 import com.intellij.openapi.ui.DialogWrapper;
-import com.intellij.openapi.ui.Messages;
+import com.intellij.openapi.ui.popup.JBPopup;
+import com.intellij.openapi.ui.popup.JBPopupFactory;
+import com.intellij.openapi.ui.popup.PopupChooserBuilder;
 import com.intellij.openapi.util.SystemInfo;
+import com.intellij.ui.awt.RelativePoint;
 import com.intellij.ui.components.JBCheckBox;
 import com.intellij.ui.components.JBList;
 import com.intellij.ui.components.labels.ActionLink;
@@ -18,6 +21,7 @@ import com.jetbrains.isaev.dao.IssuesDAO;
 import com.jetbrains.isaev.integration.youtrack.YouTrackIssuesDownloadStrategy;
 import com.jetbrains.isaev.integration.youtrack.client.YouTrackClient;
 import com.jetbrains.isaev.integration.youtrack.client.YouTrackClientFactory;
+import com.jetbrains.isaev.integration.youtrack.client.YouTrackCustomField;
 import com.jetbrains.isaev.integration.youtrack.client.YouTrackProject;
 import com.jetbrains.isaev.state.BTAccount;
 import com.jetbrains.isaev.state.BTAccountType;
@@ -33,6 +37,7 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * User: Xottab
@@ -91,7 +96,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
     private JTextField textField2;
     private JButton testButton;
     private JBList accountsUIList;
-    private JTable projectsList;
+    private JTable projectsTable;
     private JButton processIssuesButton;
     private JLabel projectsListLabel;
     private ActionLink actionLink1;
@@ -99,6 +104,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
     private ActionLink actionLink2;
     private JPanel workingPane;
     private JBCheckBox checkBox1;
+    private JButton commitIssuesPlacementInfoButton;
     private ApplyAction applyAction = new ApplyAction();
     private List<BTAccount> mustBeDeleted = new ArrayList<BTAccount>();
     private int prevSelectedIndex = -1;
@@ -129,23 +135,38 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
         accountsUIList.setCellRenderer(new ExceptionsSourceCellRenderer());
         ProjectListChooser chooser = new ProjectListChooser();
         chooser.setHorizontalTextPosition(SwingConstants.CENTER);
-        projectsList.setDefaultRenderer(SelectableItem.class, chooser);
-        projectsList.addMouseListener(new MouseAdapter() {
+        projectsTable.setDefaultRenderer(SelectableItem.class, chooser);
+        projectsTable.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                int row = projectsList.rowAtPoint(e.getPoint());
-                int col = projectsList.columnAtPoint(e.getPoint());
-                SelectableItem item = (SelectableItem) projectsModel.getValueAt(row, 1);
+                final int row = projectsTable.rowAtPoint(e.getPoint());
+                final int col = projectsTable.columnAtPoint(e.getPoint());
+                final SelectableItem item = (SelectableItem) projectsModel.getValueAt(row, 1);
                 if (col == 0) {
                     item.checkbox.setSelected(!item.checkbox.isSelected());
                     item.project.setMustBeUpdated(item.checkbox.isSelected());
                 } else if (col == 2) {
-                    Messages.showInfoMessage("LOH!", "PIDR~!");
+                    final JBList tmp = new JBList(getStringCustomFieldNames(item.project));
+                    tmp.setEmptyText("No string fields found (check your credentials)");
+                    final PopupChooserBuilder builder = JBPopupFactory.getInstance().createListPopupBuilder(tmp);
+                    builder.setItemChoosenCallback(new Runnable() {
+                        @Override
+                        public void run() {
+                            String name = (String) tmp.getSelectedValue();
+                            item.project.setCustomFieldName(name);
+                            IssuesDAO.getInstance().updateProject(item.project);
+                            JLabel actionLink = (JLabel) projectsModel.getValueAt(row, col);
+                            actionLink.setText(item.project.getCustomFieldName());
+                            actionLink.repaint();
+                        }
+                    });
+                    final JBPopup popup = builder.createPopup();
+                    popup.show(new RelativePoint(e.getLocationOnScreen()));
                 }
-                projectsList.repaint();
+                projectsTable.repaint();
             }
         });
-        // projectsList.getColumnModel().getColumn(0).setMinWidth(-1);
+        // projectsTable.getColumnModel().getColumn(0).setMinWidth(-1);
         accountsUIList.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -169,10 +190,11 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
                         textField2.setEnabled(!checkBox1.isSelected());
                         passwordField1.setEnabled(!checkBox1.isSelected());
                         for (BTProject project : account.getProjects()) {
-                            projectsModel.addRow(new SelectableItem[]{null, new SelectableItem(project), null});
+                            SelectableItem item = new SelectableItem(project);
+                            projectsModel.addRow(new Object[]{item.checkbox, item, new JLabel(item.getCustomFieldName())});
                         }
                     }
-                    projectsList.setModel(projectsModel);
+                    projectsTable.setModel(projectsModel);
                 }
                 super.mouseClicked(e);
             }
@@ -210,12 +232,13 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
                         client.login(username, pass);
                     }
                     BTAccount account = (BTAccount) accountsUIList.getModel().getElementAt(pos);
-                    projectsList.setModel(projectsModel);
+                    projectsTable.setModel(projectsModel);
                     List<YouTrackProject> projects = client.getProjects();
                     for (YouTrackProject project : projects) {
                         BTProject wrapper = new BTProject(account, project.getProjectFullName(), project.getProjectShortName());
                         if (!account.getProjects().contains(wrapper)) {
-                            projectsModel.addRow(new SelectableItem[]{new SelectableItem(wrapper)});
+                            SelectableItem item = new SelectableItem(wrapper);
+                            projectsModel.addRow(new Object[]{item.checkbox, item, new JLabel(item.getCustomFieldName())});
                             account.getProjects().add(wrapper);
                         }
                     }
@@ -248,31 +271,50 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
                 }
             }
         });
-
-       /* projectsList.addMouseListener(new MouseAdapter() {
+        commitIssuesPlacementInfoButton.addActionListener(new ActionListener() {
             @Override
-            public void mouseClicked(MouseEvent e) {
-                int index = projectsList.rowAtPoint(e.getPoint());
-                if (index >= 0 && index < projectsList.getModel().getRowCount()) {
-                    SelectableItem item = (SelectableItem) projectsList.getModel().getElementAt(index);
-                  //  Rectangle rect = new Rectangle(item.checkbox.getLocationOnScreen(), new Dimension(item.checkbox.getWidth(), item.checkbox.getHeight()));
-                    //int x = e.getXOnScreen();
-                   // int y = e.getYOnScreen();
-                   // if (rect.contains(x, y)) {
-                        item.checkbox.setSelected(!item.checkbox.isSelected());
-                        item.project.setMustBeUpdated(!item.project.isMustBeUpdated());
-                        projectsList.repaint();
-                   // }
-                   // System.out.println("Project must be updated: " + item.project.getFullName() + " " + item.project.isMustBeUpdated());
+            public void actionPerformed(ActionEvent e) {
+                int pos = accountsUIList.getSelectedIndex();
+                if (pos != -1) {
+                    applyAction.actionPerformed(e);
+                    BTAccount account = (BTAccount) model.getElementAt(pos);
+                    List<BTProject> projects = account.getProjects();
+                    List<BTProject> mustBeUpdated = new ArrayList<BTProject>();
+                    for (BTProject project : projects) {
+                        if (project.isMustBeUpdated()) {
+                            mustBeUpdated.add(project);
+                        }
+                    }
+                    if (!mustBeUpdated.isEmpty()) {
+                        if(!CommitCustomFieldInfoTask.alreadyRunning)
+                            ProgressManager.getInstance().run(new CommitCustomFieldInfoTask(mustBeUpdated));
+                        }
                 }
+
             }
-        });*/
+        });
 
         contentPane.registerKeyboardAction(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 dispose();
             }
         }, KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT);
+    }
+
+    private List<String> getStringCustomFieldNames(BTProject project) {
+        List<String> tmp = new ArrayList<String>();
+        BTAccount acc = project.getBtAccount();
+        YouTrackClient client = clientFactory.getClient(acc.getDomainName());
+        if (!acc.isAsGuest())
+            client.login(acc.getLogin(), acc.getPassword());
+        Set<String> fields = client.getProjectCustomFieldNames(project.getShortName());
+        for (String name : fields) {
+            YouTrackCustomField field = client.getProjectCustomField(project.getShortName(), name);
+            if (field.getType().equals("string")) {
+                tmp.add(field.getName());
+            }
+        }
+        return tmp;
     }
 
     private static List<BTAccount> getAccountsFromUI() {
@@ -340,7 +382,7 @@ public class AddNewReportsSourcesDialog extends DialogWrapper {
             @Override
             public void actionPerformed(AnActionEvent e) {
                 workingPane.setVisible(true);
-                BTAccount account = new BTAccount(""/*textField1.getText()*/, ""/*textField2.getText()*/, ""/*new String(passwordField1.getPassword())*/, BTAccountType.YOUTRACK, false/*(BTAccountType) comboBox1.getModel().getSelectedItem()*/);
+                BTAccount account = new BTAccount("", "", "", BTAccountType.YOUTRACK, false);
                 model.addElement(account);
             }
         });

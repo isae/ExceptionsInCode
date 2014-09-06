@@ -4,6 +4,7 @@ import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.project.Project;
 import com.jetbrains.isaev.dao.IssuesDAO;
+import org.jetbrains.annotations.NotNull;
 
 import javax.jnlp.FileOpenService;
 import javax.swing.*;
@@ -18,15 +19,17 @@ public class GlobalVariables {
     private static GlobalVariables instance;
     public static final String YOUTRACK_CUSTOM_FIELD_DEFAULT_NAME = "Placement in code";
 
+    @NotNull
     public static Project project;
+    @NotNull
     public static IssuesDAO dao;
 
-    public GlobalVariables(Project project) {
+    public GlobalVariables(@NotNull Project project) {
         GlobalVariables.project = project;
         GlobalVariables.instance = this;
     }
 
-    public GlobalVariables(Project project, IssuesDAO instance) {
+    public GlobalVariables(Project project, @NotNull IssuesDAO instance) {
         this(project);
         GlobalVariables.dao = instance;
     }

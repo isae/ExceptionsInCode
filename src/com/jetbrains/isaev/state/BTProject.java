@@ -2,6 +2,7 @@ package com.jetbrains.isaev.state;
 
 import com.jetbrains.isaev.GlobalVariables;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
 import java.sql.Timestamp;
@@ -24,6 +25,7 @@ public class BTProject {
     private Timestamp lastUpdated;
     private boolean mustBeUpdated = false;
     private int projectID;
+    private String customFieldName;
 
     public int getAccountID() {
         return accountID;
@@ -41,13 +43,14 @@ public class BTProject {
         this.mustBeUpdated = false;
     }
 
-    public BTProject(int projectID, int accountID, @NotNull String shortName, @NotNull String longName, @NotNull Timestamp lastUpdated, boolean mustBeUpdated) {
+    public BTProject(int projectID, int accountID, @NotNull String shortName, @NotNull String longName, @NotNull Timestamp lastUpdated, boolean mustBeUpdated, @Nullable String customFieldName) {
         this.projectID = projectID;
         this.accountID = accountID;
         this.fullName = longName;
         this.shortName = shortName;
         this.lastUpdated = lastUpdated;
         this.mustBeUpdated = mustBeUpdated;
+        this.customFieldName = customFieldName;
     }
 
     public BTProject(@NotNull BTAccount account, @NotNull String projectFullName, @NotNull String projectShortName) {
@@ -137,5 +140,13 @@ public class BTProject {
         result = 31 * result + (shortName.hashCode());
         result = 31 * result + (btAccount != null ? btAccount.hashCode() : 0);
         return result;
+    }
+
+    public String getCustomFieldName() {
+        return customFieldName;
+    }
+
+    public void setCustomFieldName(String customFieldName) {
+        this.customFieldName = customFieldName;
     }
 }

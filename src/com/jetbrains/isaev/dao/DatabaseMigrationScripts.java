@@ -45,6 +45,21 @@ public class DatabaseMigrationScripts {
                     db.update("UPDATE STElements S SET issueID = (SELECT E.issueID FROM Exceptions E WHERE E.exceptionID = S.exceptionID)");
                     db.update("ALTER TABLE STElements ADD FOREIGN KEY (issueID) REFERENCES Issues(issueID) ON DELETE CASCADE");
                 }
+            },
+            new Runnable() {
+                @Override
+                public void run() {//because of new version of db
+                    db.execute(IssuesDAO.ST_ELEMENTS_DELETE_STATEMENT);
+                    db.execute(IssuesDAO.EXCEPTIONS_DELETE_STATEMENT);
+                    db.execute(IssuesDAO.ISSUES_DELETE_STATEMENT);
+                    db.execute(IssuesDAO.PROJECTS_DELETE_STATEMENT);
+                    db.execute(IssuesDAO.ACCOUNTS_DELETE_STATEMENT);
+                    db.execute(IssuesDAO.ACCOUNTS_CREATE_STATEMENT);
+                    db.execute(IssuesDAO.PROJECTS_CREATE_STATEMENT);
+                    db.execute(IssuesDAO.ISSUES_CREATE_STATEMENT);
+                    db.execute(IssuesDAO.EXCEPTIONS_CREATE_STATEMENT);
+                    db.execute(IssuesDAO.ST_ELEMENTS_CREATE_STATEMENT);
+                }
             }
     };
 }

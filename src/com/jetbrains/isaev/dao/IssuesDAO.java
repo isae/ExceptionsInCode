@@ -26,9 +26,9 @@ public class IssuesDAO {
 
     private static final String PATH_SEPARATOR = System.getProperty("file.separator");
     private static final String DB_NAME = "BTIssuesDB";
-    private static final int CURRENT_DATABASE_VERSION = 6;
+    private static final int CURRENT_DATABASE_VERSION = 7;
     private static final String STORAGE_FOLDER_PATH = GlobalVariables.getInstance().project.getBasePath() + PATH_SEPARATOR + ".idea" + PATH_SEPARATOR + "BTIssuesDB";
-    private static final String ACCOUNTS_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS Accounts (" +
+    public static final String ACCOUNTS_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS Accounts (" +
             "accountID INT  PRIMARY KEY  AUTO_INCREMENT, " +
             "domainName VARCHAR(255) NOT NULL, " +
             "login VARCHAR(255) NOT NULL, " +
@@ -36,14 +36,15 @@ public class IssuesDAO {
             "asGuest BOOLEAN NOT NULL, " +
             "type TINYINT NOT NULL, " +
             "UNIQUE(domainName, login, password))";
-    private static final String PROJECTS_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS Projects (" +
+    public static final String PROJECTS_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS Projects (" +
             "projectID INT  PRIMARY KEY  AUTO_INCREMENT, " +
             "accountID INT, shortName VARCHAR(255), " +
             "longName VARCHAR(255), " +
+            "customFieldName VARCHAR(255), " +
             "mustBeUpdated BOOL, " +
             "lastUpdated TIMESTAMP, " +
             "FOREIGN KEY(accountID) REFERENCES Accounts(accountID) ON DELETE CASCADE,UNIQUE(accountID,shortName,longName))";
-    private static final String ISSUES_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS Issues (" +
+    public static final String ISSUES_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS Issues (" +
             "issueID INT  PRIMARY KEY  AUTO_INCREMENT, " +
             "projectID INT, " +
             "title CLOB, " +
@@ -52,13 +53,13 @@ public class IssuesDAO {
             "mustBeShown BOOLEAN DEFAULT TRUE, " +
             "lastUpdated TIMESTAMP, " +
             "FOREIGN KEY(projectID) REFERENCES Projects(projectID) ON DELETE CASCADE)";
-    private static final String EXCEPTIONS_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS Exceptions (" +
+    public static final String EXCEPTIONS_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS Exceptions (" +
             "exceptionID IDENTITY, " +
             "issueID INT, " +
             "name VARCHAR(255), " +
             "message CLOB, " +
             "FOREIGN KEY(issueID) REFERENCES Issues(issueID) ON DELETE CASCADE)";
-    private static final String ST_ELEMENTS_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS STElements (" +
+    public static final String ST_ELEMENTS_CREATE_STATEMENT = "CREATE TABLE IF NOT EXISTS STElements (" +
             "stElementID IDENTITY, " +
             "exceptionID BIGINT, " +
             "issueID INT, " +
@@ -71,6 +72,11 @@ public class IssuesDAO {
             "onPlace BOOLEAN DEFAULT FALSE, " +
             "FOREIGN KEY(exceptionID) REFERENCES Exceptions(exceptionID) ON DELETE CASCADE, " +
             "FOREIGN KEY(issueID) REFERENCES Issues(issueID) ON DELETE CASCADE)";
+    public static final String ACCOUNTS_DELETE_STATEMENT = "DROP TABLE IF EXISTS Accounts";
+    public static final String PROJECTS_DELETE_STATEMENT = "DROP TABLE IF EXISTS Projects";
+    public static final String ISSUES_DELETE_STATEMENT = "DROP TABLE IF EXISTS Issues";
+    public static final String EXCEPTIONS_DELETE_STATEMENT = "DROP TABLE IF EXISTS Exceptions";
+    public static final String ST_ELEMENTS_DELETE_STATEMENT = "DROP TABLE IF EXISTS STElements";
 
     protected static final Logger logger = Logger.getInstance(IssuesDAO.class);
     private static IssuesDAO instance;
@@ -80,6 +86,7 @@ public class IssuesDAO {
     private static HashMap<Integer, BTIssue> cachedIssues;
     HashSet<BTAccount> accounts;
     private static HashMap<Long, StackTraceElement> stElementsCache;
+    private static HashMap<Integer, BTAccount> accountsCache;
     private static RowMapper<StackTraceElement> stackTraceElementRowMapper = new RowMapper<StackTraceElement>() {
         @Override
         public StackTraceElement mapRow(ResultSet rs, int i) throws SQLException {
@@ -127,11 +134,11 @@ public class IssuesDAO {
         if (knownVersion == 0) {//first open
             ProjectData.setDbVersion(CURRENT_DATABASE_VERSION);
             //some clean-up
-            db.execute("DROP TABLE IF EXISTS Accounts");
-            db.execute("DROP TABLE IF EXISTS Projects");
-            db.execute("DROP TABLE IF EXISTS Issues");
-            db.execute("DROP TABLE IF EXISTS Exceptions");
-            db.execute("DROP TABLE IF EXISTS STElements");
+            db.execute(ST_ELEMENTS_DELETE_STATEMENT);
+            db.execute(EXCEPTIONS_DELETE_STATEMENT);
+            db.execute(ISSUES_DELETE_STATEMENT);
+            db.execute(PROJECTS_DELETE_STATEMENT);
+            db.execute(ACCOUNTS_DELETE_STATEMENT);
             //lets create some tables
             db.execute(ACCOUNTS_CREATE_STATEMENT);
             db.execute(PROJECTS_CREATE_STATEMENT);
@@ -148,6 +155,7 @@ public class IssuesDAO {
         cachedIssues = new HashMap<Integer, BTIssue>();
         accounts = new CachedHashSet<BTAccount>();
         stElementsCache = new HashMap<Long, StackTraceElement>();
+        accountsCache = new HashMap<Integer, BTAccount>();
     }
 
     private void startMigrationToAnotherVersion(int oldVersion) {
@@ -160,11 +168,12 @@ public class IssuesDAO {
 
 
     public void updateProject(BTProject btProject) {
-        db.update("UPDATE Projects SET shortName = ? , longName = ? , lastUpdated = ? , mustBeUpdated = ? WHERE projectID = ?",
+        db.update("UPDATE Projects SET shortName = ? , longName = ? , lastUpdated = ? , mustBeUpdated = ?, customFieldName = ? WHERE projectID = ?",
                 new SqlParameterValue(Types.VARCHAR, btProject.getShortName()),
                 new SqlParameterValue(Types.VARCHAR, btProject.getFullName()),
                 new SqlParameterValue(Types.TIMESTAMP, btProject.getLastUpdated()),
                 new SqlParameterValue(Types.BOOLEAN, btProject.isMustBeUpdated()),
+                new SqlParameterValue(Types.VARCHAR, btProject.getCustomFieldName()),
                 new SqlParameterValue(Types.INTEGER, btProject.getProjectID()));
     }
 
@@ -201,11 +210,47 @@ public class IssuesDAO {
 
     public void deleteBtAccount(BTAccount acc) {
         db.update("DELETE FROM Accounts WHERE accountID = ?", acc.getAccountID());
+        accountsCache.remove(acc.getAccountID());
     }
 
     public List<BTIssue> getAllIssuesFullState() {
         final Map<Integer, BTIssue> btIssues = new HashMap<Integer, BTIssue>();//new TreeSet<>((i1, i2) -> i1.getIssueID() < i2.getIssueID() ? -1 : 1);
         List<BTIssue> result = db.query("SELECT * FROM STElements JOIN Exceptions ON STElements.exceptionID = Exceptions.exceptionID JOIN Issues ON Exceptions.issueID = Issues.issueID", (Object[]) null, new RowMapper<BTIssue>() {
+
+
+            @Override
+            public BTIssue mapRow(ResultSet rs, int i) throws SQLException {
+                int id = rs.getInt("issueID");
+                if (!cachedIssues.containsKey(id)) {
+                    cachedIssues.put(id, new BTIssue(id, getStringFromClob(rs.getClob("title")), getStringFromClob(rs.getClob("description")), rs.getTimestamp("lastUpdated"), rs.getString("number"), rs.getInt("projectID"), rs.getBoolean("mustBeShown")));
+                }
+                BTIssue issue = cachedIssues.get(id);
+                if (!btIssues.containsKey(issue.hashCode())) btIssues.put(issue.hashCode(), issue);
+                issue = btIssues.get(issue.hashCode());
+                ParsedException exception = new ParsedException(rs.getInt("issueID"), rs.getString("name"), rs.getLong("exceptionID"), getStringFromClob(rs.getClob("message")));
+                if (!issue.getExceptions().containsKey(exception.hashCode()))
+                    issue.getExceptions().put(exception.hashCode(), exception);
+                long stID = rs.getLong("stElementID");
+                if (!stElementsCache.containsKey(stID)) {
+                    stElementsCache.put(stID, new StackTraceElement(stID, rs.getInt("issueID"), rs.getString("declaringClass"), rs.getString("methodName"), rs.getString("fileName"), rs.getInt("lineNumber"), rs.getLong("exceptionID"), rs.getByte("anOrder"), rs.getBoolean("onPlace"), getStringFromClob(rs.getClob("dndInfo"))));
+                }
+                StackTraceElement element = stElementsCache.get(stID);
+                if (!exception.getStacktrace().containsKey(element.hashCode()))
+                    exception.getStacktrace().put(element.hashCode(), element);
+                return null;
+            }
+        });
+
+        for (BTIssue issue : btIssues.values())
+            for (ParsedException ex : issue.getExceptions().values())
+                ex.orderStacktrace();
+        return new ArrayList<BTIssue>(btIssues.values());
+    }
+
+    //todo remove copy-paste
+    public List<BTIssue> getAllProjectIssues(int projectID) {
+        final Map<Integer, BTIssue> btIssues = new HashMap<Integer, BTIssue>();//new TreeSet<>((i1, i2) -> i1.getIssueID() < i2.getIssueID() ? -1 : 1);
+        List<BTIssue> result = db.query("SELECT * FROM STElements JOIN Exceptions ON STElements.exceptionID = Exceptions.exceptionID JOIN Issues ON Exceptions.issueID = Issues.issueID WHERE Issues.projectID = ?", new Object[]{projectID}, new RowMapper<BTIssue>() {
 
 
             @Override
@@ -256,7 +301,7 @@ public class IssuesDAO {
         return db.query("SELECT * FROM Projects", (Object[]) null, new RowMapper<BTProject>() {
             @Override
             public BTProject mapRow(ResultSet rs, int i) throws SQLException {
-                return new BTProject(rs.getInt("projectID"), rs.getInt("accountID"), rs.getString("shortName"), rs.getString("longName"), rs.getTimestamp("lastUpdated"), rs.getBoolean("mustBeUpdated"));
+                return new BTProject(rs.getInt("projectID"), rs.getInt("accountID"), rs.getString("shortName"), rs.getString("longName"), rs.getTimestamp("lastUpdated"), rs.getBoolean("mustBeUpdated"), rs.getString("customFieldName"));
             }
         });
     }
@@ -282,7 +327,7 @@ public class IssuesDAO {
                     tmp2.put(acc.getAccountID(), new ArrayList<BTProject>());
                 }
                 if (rs.getInt("projectID") != 0) {
-                    BTProject project = new BTProject(rs.getInt("projectID"), rs.getInt("accountID"), rs.getString("shortName"), rs.getString("longName"), rs.getTimestamp("lastUpdated"), rs.getBoolean("mustBeUpdated"));
+                    BTProject project = new BTProject(rs.getInt("projectID"), rs.getInt("accountID"), rs.getString("shortName"), rs.getString("longName"), rs.getTimestamp("lastUpdated"), rs.getBoolean("mustBeUpdated"), rs.getString("customFieldName"));
                     project.setBtAccount(tmp.get(acc.getAccountID()));
                     tmp2.get(acc.getAccountID()).add(project);
                 }
@@ -354,29 +399,29 @@ public class IssuesDAO {
 
     private void updateProjects(int accountID, List<BTProject> projects) {
         for (BTProject p : projects) {
-           // if (p.isMustBeUpdated()) {
-                List<BTProject> prs = db.query("SELECT * FROM Projects WHERE accountID= ? AND shortName = ? AND longName = ? ", new Object[]{accountID, p.getShortName(), p.getFullName()}, new RowMapper<BTProject>() {
-                    @Override
-                    public BTProject mapRow(ResultSet rs, int i) throws SQLException {
-                        int projectID = rs.getInt("projectID");
-                        String shortName = rs.getString("shortName");
-                        String longName = rs.getString("longName");
-                        return new BTProject(shortName, longName);
-                    }
-                });
-                if (prs.size() == 0) {
-                    db.update("INSERT INTO Projects ( accountID, shortName, longName, lastUpdated, mustBeUpdated) values (?,?,?,?, ?)", accountID, p.getShortName(), p.getFullName(), p.getLastUpdated(), p.isMustBeUpdated());
-                    p.setProjectID(db.query("SELECT projectID FROM Projects WHERE (accountID = ? AND shortName = ? AND longName = ? )", new Object[]{accountID, p.getShortName(), p.getFullName()}, new ResultSetExtractor<Integer>() {
-                        @Override
-                        public Integer extractData(ResultSet rs) throws SQLException, DataAccessException {
-                            rs.next();
-                            return rs.getInt(1);
-
-                        }
-                    }));
-                } else {
-                    db.update("UPDATE Projects SET mustBeUpdated = ? WHERE projectID = ?", p.isMustBeUpdated(), p.getProjectID());
+            // if (p.isMustBeUpdated()) {
+            List<BTProject> prs = db.query("SELECT * FROM Projects WHERE accountID= ? AND shortName = ? AND longName = ? ", new Object[]{accountID, p.getShortName(), p.getFullName()}, new RowMapper<BTProject>() {
+                @Override
+                public BTProject mapRow(ResultSet rs, int i) throws SQLException {
+                    int projectID = rs.getInt("projectID");
+                    String shortName = rs.getString("shortName");
+                    String longName = rs.getString("longName");
+                    return new BTProject(shortName, longName);
                 }
+            });
+            if (prs.size() == 0) {
+                db.update("INSERT INTO Projects ( accountID, shortName, longName, lastUpdated, mustBeUpdated) values (?,?,?,?, ?)", accountID, p.getShortName(), p.getFullName(), p.getLastUpdated(), p.isMustBeUpdated());
+                p.setProjectID(db.query("SELECT projectID FROM Projects WHERE (accountID = ? AND shortName = ? AND longName = ? )", new Object[]{accountID, p.getShortName(), p.getFullName()}, new ResultSetExtractor<Integer>() {
+                    @Override
+                    public Integer extractData(ResultSet rs) throws SQLException, DataAccessException {
+                        rs.next();
+                        return rs.getInt(1);
+
+                    }
+                }));
+            } else {
+                db.update("UPDATE Projects SET mustBeUpdated = ? WHERE projectID = ?", p.isMustBeUpdated(), p.getProjectID());
+            }
             //}
         }
     }
@@ -435,7 +480,7 @@ public class IssuesDAO {
         List<BTProject> prs = db.query("SELECT * FROM Projects WHERE projectID= ?", new Object[]{projectID}, new RowMapper<BTProject>() {
             @Override
             public BTProject mapRow(ResultSet rs, int i) throws SQLException {
-                return new BTProject(rs.getInt("projectID"), rs.getInt("accountID"), rs.getString("shortName"), rs.getString("longName"), rs.getTimestamp("lastUpdated"), rs.getBoolean("mustBeUpdated"));
+                return new BTProject(rs.getInt("projectID"), rs.getInt("accountID"), rs.getString("shortName"), rs.getString("longName"), rs.getTimestamp("lastUpdated"), rs.getBoolean("mustBeUpdated"), rs.getString("customFieldName"));
             }
         });
         if (prs.size() == 0)
@@ -445,6 +490,7 @@ public class IssuesDAO {
 
 
     public BTAccount getAccount(int accountID) {
+        if (accountsCache.containsKey(accountID)) return accountsCache.get(accountID);
         List<BTAccount> prs = db.query("SELECT * FROM Accounts WHERE accountID= ?", new Object[]{accountID}, new RowMapper<BTAccount>() {
             @Override
             public BTAccount mapRow(ResultSet rs, int i) throws SQLException {
@@ -453,7 +499,9 @@ public class IssuesDAO {
         });
         if (prs.size() == 0)
             return null;
-        return prs.get(0);
+        BTAccount acc = prs.get(0);
+        accountsCache.put(acc.getAccountID(), acc);
+        return accountsCache.get(accountID);
     }
 
 

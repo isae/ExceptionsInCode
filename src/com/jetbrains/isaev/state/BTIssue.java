@@ -2,7 +2,9 @@ package com.jetbrains.isaev.state;
 
 import com.jetbrains.isaev.GlobalVariables;
 import com.jetbrains.isaev.dao.ZipUtils;
+import com.jetbrains.isaev.integration.youtrack.IssueCustomFieldPlacementInfo;
 import com.jetbrains.isaev.issues.*;
+import com.jetbrains.isaev.issues.StackTraceElement;
 import com.jetbrains.isaev.ui.ParsedException;
 
 import java.io.Serializable;
@@ -162,5 +164,16 @@ public class BTIssue {
 
     public HashMap<Long, com.jetbrains.isaev.issues.StackTraceElement> getAllSTElements() {
         return GlobalVariables.dao.getAllSTElements(issueID);
+    }
+
+    public IssueCustomFieldPlacementInfo getWritableIssuePlacementInfo() {
+        IssueCustomFieldPlacementInfo info = new IssueCustomFieldPlacementInfo();
+        HashMap<Integer, PlacementInfo> result = new HashMap<Integer, PlacementInfo>();
+        for (ParsedException exception : exceptions.values())
+            for (StackTraceElement element : exception.getStacktrace().values()) {
+                result.put(element.hashCode(), element.getPlacementInfo());
+            }
+        info.setIssueInfo(result);
+        return info;
     }
 }
