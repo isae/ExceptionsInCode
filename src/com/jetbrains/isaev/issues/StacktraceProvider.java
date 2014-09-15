@@ -161,11 +161,11 @@ public class StacktraceProvider {
         return tmp.toString();
     }
 
-    public List<ParsedException> parseAllTestExceptions(String text) {
+    public Map<Integer, ParsedException> parseAllTestExceptions(String text) {
         setHeadlineMatcher(text);
         setTraceMatcher(text);
         List<ParsedException> result = new ArrayList<ParsedException>();
-      /*  List<Integer> headPositions = new ArrayList<>();
+        List<Integer> headPositions = new ArrayList<Integer>();
         while (headlineMatcher.find()) {
             headPositions.add(headlineMatcher.start());
             ParsedException tmp = new ParsedException(headlineMatcher.group(1), headlineMatcher.group(4));
@@ -174,22 +174,31 @@ public class StacktraceProvider {
         for (int i = 0; i < headPositions.size(); i++) {
             int next = i == headPositions.size() - 1 ? text.length() : headPositions.get(i + 1);
             Matcher m = traceMatcher.region(headPositions.get(i), next);
-            List<StackTraceElement> stackTrace = new ArrayList<>();
+            List<StackTraceElement> stackTrace = new ArrayList<StackTraceElement>();
             String sourceFile = null;
             while (m.find()) {
                 String className = m.group(1);
                 String methodName = m.group(3);
                 sourceFile = m.group(4);
                 int lineNum = Integer.parseInt(m.group(5));
-                boolean f = false;
-                PsiFile[] files;
-                StackTraceElement element = new StackTraceElement(className, methodName,
-                        sourceFile, lineNum);
-                element.setException(result.get(i));
-                stackTrace.add(element);
+                    className = removeAnonimousMarks(className);
+                    StackTraceElement element = new StackTraceElement(className, methodName,
+                            sourceFile, lineNum);
+                    element.setException(result.get(i));
+                    stackTrace.add(element);
             }
-
-            result.get(i).setStacktrace(null);
+            if (stackTrace.size() > 1) {
+                for (int j = 0; j < stackTrace.size(); i++) {
+                    stackTrace.get(j).setOrder((byte) (j + 1));
+                }
+            }
+            if (stackTrace.size() > 0) {
+                Map<Integer, StackTraceElement> elementMap = new HashMap<Integer, StackTraceElement>();
+                for (StackTraceElement el : stackTrace) {
+                    elementMap.put(el.hashCode(), el);
+                }
+                result.get(i).setStacktrace(elementMap);
+            }
         }
         Iterator<ParsedException> iter = result.iterator();
         while (iter.hasNext()) {
@@ -197,8 +206,10 @@ public class StacktraceProvider {
             if (tmp.getStacktrace().size() == 0) {
                 iter.remove();
             }
-        }*/
-        return result;
+        }
+        Map<Integer, ParsedException> finalResult = new HashMap<Integer, ParsedException>();
+        for (ParsedException exception : result) finalResult.put(exception.hashCode(), exception);
+        return finalResult;
     }
 
 }

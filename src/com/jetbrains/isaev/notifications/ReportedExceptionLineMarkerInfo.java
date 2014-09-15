@@ -101,9 +101,7 @@ public class ReportedExceptionLineMarkerInfo extends MergeableLineMarkerInfo<Psi
             JBPopup popup = JBPopupFactory.getInstance().createListPopupBuilder(list).setCancelOnClickOutside(false).setCloseOnEnter(false).createPopup();
             list.setContainingPopup(popup);
             list.addListener();
-            Point p = e.getPoint();
-            p.x = gutterLocation.x;
-            popup.show(new RelativePoint(e.getComponent(), p));
+            popup.show(new RelativePoint(e));
 
         }
     }

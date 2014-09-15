@@ -4,10 +4,13 @@ import com.jetbrains.isaev.integration.youtrack.client.*;
 import com.jetbrains.isaev.issues.StacktraceProvider;
 import com.jetbrains.isaev.ui.ParsedException;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 /**
  * User: Xottab
@@ -45,36 +48,21 @@ public class YouTrackTest {
 
     public static void main(String[] args) {
 
-        YouTrackClient client = clientFactory.getClient(LOCAL_YOUTRACK_URL);
-        client.login("root", "шыфум123");
-        YouTrackIssue issue = client.getIssue("TST-4");
-        List<YouTrackCustomField> field = client.getProjectCustomFields("TST");
-        // YouTrackProject proj = null;
-        //for (YouTrackProject project : client.getProjects()) {
-        //   if (project.getProjectFullName().equals("Test")) proj = project;
-        // out.println("full " + project.getProjectFullName() + " short " + project.getProjectShortName());
-        //}
-        //YouTrackCustomFieldPrototype prototype = new YouTrackCustomFieldPrototype("TestTest", YouTrackCustomFieldType.STRING, false, false, false);
-        //client.putNewCustomFieldPrototype(prototype);
-        // client.attachCustomFieldToProject(proj, prototype.getName(), "Empty");
-        // proj.updateCustomFields(client);
-        //Collection<YouTrackCustomField> fields = client.getProjectCustomFields(proj.getProjectShortName());
-        //List<YouTrackProject> projects = client.getProjects();
-        //for (YouTrackProject project : projects) {
-        //   if (project.getProjectShortName().equals("IDEA")) proj = project;
-        // out.println("full " + project.getProjectFullName() + " short " + project.getProjectShortName());
-        //}
-        //YouTrackIssue issue = client.getIssue("IDEA-95925");
-        //List<ParsedException> exceptions = StacktraceProvider.getTestInstance().parseAllTestExceptions(issue.getSummary() + " " + issue.getDescription());
-        // out.println("\n\n\n");
-       /* List<YouTrackIssue> issues = new ArrayList<>(110000);
+        YouTrackClient client = clientFactory.getClient(JETBRAINS_YOUTRACK_URL);
+        YouTrackProject proj = null;
+        PrintWriter out = null;
+        List<YouTrackProject> projects = client.getProjects();
+        for (YouTrackProject project : projects) {
+            if (project.getProjectShortName().equals("IDEA")) proj = project;
+        }
+        List<YouTrackIssue> issues = new ArrayList<YouTrackIssue>(110000);
         StacktraceProvider provider = StacktraceProvider.getInstance();
 
         //#2539;
         int after = 0;
         int counter = 0;
         int finded = 0;
-        List<Integer> errors = new ArrayList<>();
+        List<Integer> errors = new ArrayList<Integer>();
         do {
             try {
                 out = new PrintWriter(new FileWriter("test.out", true));
@@ -87,15 +75,15 @@ public class YouTrackTest {
             after += finded;
             for (YouTrackIssue issue : tempIssues) {
 
-                List<ParsedException> parsedExceptions = provider.parseAllExceptions(issue.getSummary() + " " + issue.getDescription());
+                Map<Integer, ParsedException> parsedExceptions = provider.parseAllTestExceptions(issue.getSummary() + " " + issue.getDescription());
                 if (parsedExceptions.size() > 0) {
                     out.println(issue.getId());
                     counter++;
                     out.println(issue.getSummary() + "\n" + issue.getDescription() + "\n_____");
-                    for (ParsedException exception : parsedExceptions) {
+                    for (ParsedException exception : parsedExceptions.values()) {
 
                         out.println(exception.getName() + ": " + exception.getOptionalMessage());
-                        for (com.jetbrains.isaev.issues.StackTraceElement element : exception.getStacktrace()) {
+                        for (com.jetbrains.isaev.issues.StackTraceElement element : exception.getStacktrace().values()) {
                             out.println("at " + element.toString());
                         }
                         out.println("_____");
@@ -105,16 +93,11 @@ public class YouTrackTest {
             }
             out.close();
         } while (finded > 0);
-         *//*catch (Exception e) {
-            System.out.println("ERROR!! ERROR!! ERROR!!");
-            e.printStackTrace();
-        }*//*
+
         out.println("Issues finded: " + finded);
-        // YouTrackIssue issue = client.getIssue("IDEA-127736");
-        //  ParsedException[] finded = provider.parseAllExceptions(issue.getSummary()+" "+issue.getDescription());
 
 
         out.println("Summary: " + counter + " items");
-        out.close();*/
+        out.close();
     }
 }
