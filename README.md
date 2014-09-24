@@ -2,9 +2,10 @@
 This is Intellij IDEA plugin developed for showing exceptions containing issues from bugtracking systems right in code, at the apropriate file.
 
 ## Currently implemented features
-* 1
-* 2
-* 3
+* managing sources of issues
+* list of all downloaded issues, jump to code place by clicking on item
+* draggable and dropable, copyable notifications in the gutter area, open issue description by clicking an icon
+* issue showing window with ability to jump right to YouTrack
 
 ## Building and running
 1. Clone this repo
